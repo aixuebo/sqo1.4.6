@@ -1,0 +1,5 @@
+本项目是sqoop_1.4.6版本
+1.将pom-old.xml 改成pom.xml
+2.将lib包、sqoop-1.4.6.jar、sqoop-test-1.4.6.jar都未提交到git上
+3.如果需要以上lib包,请到baidu云上获取
+
