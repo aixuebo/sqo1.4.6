@@ -163,6 +163,7 @@ public class ImportJobBase extends JobBase {
   protected boolean runJob(Job job) throws ClassNotFoundException, IOException,
       InterruptedException {
 
+	  //创建每秒流量统计对象,并且开始计时
     PerfCounters perfCounters = new PerfCounters();
     perfCounters.startClock();
 

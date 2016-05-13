@@ -22,13 +22,14 @@ import java.text.NumberFormat;
 
 /**
  * A quick set of performance counters for reporting import speed.
+ * 创建每秒流量统计对象
  */
 public class PerfCounters {
 
-  private long bytes;
-  private long nanoseconds;
+  private long bytes;//产生多少字节
+  private long nanoseconds;//消耗多少时间
 
-  private long startTime;
+  private long startTime;//开始时间
 
   public PerfCounters() {
   }
@@ -47,19 +48,22 @@ public class PerfCounters {
 
   private static final double ONE_BILLION = 1000.0 * 1000.0 * 1000.0;
 
-  /** Maximum number of digits after the decimal place. */
+  /** Maximum number of digits after the decimal place. 
+   * 小数点保留多少位
+   **/
   private static final int MAX_PLACES = 4;
 
   /**
    * @return A value in nanoseconds scaled to report in seconds
+   * 消耗时间单位转换成秒
    */
   private Double inSeconds(long nanos) {
     return (double) nanos / ONE_BILLION;
   }
 
-  private static final long ONE_GB = 1024 * 1024 * 1024;
-  private static final long ONE_MB = 1024 * 1024;
-  private static final long ONE_KB = 1024;
+  private static final long ONE_GB = 1024 * 1024 * 1024;//1G
+  private static final long ONE_MB = 1024 * 1024;//1M
+  private static final long ONE_KB = 1024;//1K
 
 
   /**
@@ -88,6 +92,7 @@ public class PerfCounters {
     return fmt.format(val) + " " + scale;
   }
 
+  //一共消耗了多少秒
   private String formatTimeInSeconds() {
     NumberFormat fmt = NumberFormat.getInstance();
     fmt.setMaximumFractionDigits(MAX_PLACES);
@@ -102,8 +107,10 @@ public class PerfCounters {
     NumberFormat fmt = NumberFormat.getInstance();
     fmt.setMaximumFractionDigits(MAX_PLACES);
 
+    //消耗时间转换成秒
     Double seconds = inSeconds(this.nanoseconds);
 
+    //计算每秒多少字节
     double speed = (double) bytes / seconds;
     double val;
     String scale;
@@ -124,6 +131,7 @@ public class PerfCounters {
     return fmt.format(val) + " " + scale + "/sec";
   }
 
+  //产生多少字节,在多少秒内,平均每秒多少字节
   public String toString() {
     return formatBytes() + " in " + formatTimeInSeconds() + " ("
         + formatSpeed() + ")";

@@ -35,6 +35,7 @@ import com.cloudera.sqoop.cli.RelatedOptions;
  * for all the options associated with a single tool.
  * The order in which sets of related options are added to this tool is
  * preserved in printing and iteration.
+ * 循环工具所有的Option选项
  */
 public class ToolOptions implements Iterable<RelatedOptions> {
 
@@ -56,6 +57,7 @@ public class ToolOptions implements Iterable<RelatedOptions> {
    * Add a block of related options to the options for this tool,
    * if a block has not already been added with the same title.
    * @param opts the set of RelatedOptions to add.
+   * 不包含,则添加到集合中
    */
   public void addUniqueOptions(RelatedOptions opts) {
     if (!containsGroup(opts.getTitle())) {
@@ -69,6 +71,7 @@ public class ToolOptions implements Iterable<RelatedOptions> {
    * @param title the group title to search for
    * @return true if a RelatedOptions with this group title is
    * in the collection.
+   * true表示包含
    */
   public boolean containsGroup(String title) {
     for (RelatedOptions related : this) {
@@ -83,6 +86,7 @@ public class ToolOptions implements Iterable<RelatedOptions> {
   /**
    * Provide an iterator over all sets of RelatedOptions.
    * @return an iterator returning each RelatedOptions element.
+   * 循环每一个Option
    */
   public Iterator<RelatedOptions> iterator() {
     return optGroups.iterator();
@@ -93,10 +97,11 @@ public class ToolOptions implements Iterable<RelatedOptions> {
    * Flatten the different sets of related options into a single collection
    * of options.
    * @return all options in the ToolOptions as a single set
+   * 	  //将一组的Option合并成一个Options集合
    */
   public Options merge() {
     Options mergedOpts = new Options();
-    int totalOpts = 0;
+    int totalOpts = 0;//合并了多少个option
     for (RelatedOptions relatedOpts : this) {
       for (Object optObj : relatedOpts.getOptions()) {
         Option opt = (Option) optObj;

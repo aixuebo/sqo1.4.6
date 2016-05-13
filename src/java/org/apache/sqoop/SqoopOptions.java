@@ -100,6 +100,7 @@ public class SqoopOptions implements Cloneable {
 
   @StoredAsProperty("verbose") private boolean verbose;
 
+  //设置job的任务名称
   @StoredAsProperty("mapreduce.job.name") private String mapreduceJobName;
 
   @StoredAsProperty("db.connect.string") private String connectString;

@@ -23,6 +23,7 @@ import org.apache.commons.cli.Options;
 /**
  * Class that extends a set of options to provide a title for a
  * related set of options.
+ * 为每一个cli的Options对象,分配一个title名字,即可以是汉语名字
  */
 public class RelatedOptions extends Options {
 

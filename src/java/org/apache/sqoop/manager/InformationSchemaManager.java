@@ -26,6 +26,7 @@ import com.cloudera.sqoop.SqoopOptions;
 /**
  * Database manager that queries "information schema" directly
  * (instead of metadata calls) to retrieve information.
+ * 返回数据库的一些基础信息
  */
 public abstract class InformationSchemaManager
     extends com.cloudera.sqoop.manager.CatalogQueryManager {
@@ -38,8 +39,12 @@ public abstract class InformationSchemaManager
     super(driverClass, opts);
   }
 
+  //mysql中getSchemaQuery为SELECT SCHEMA()
   protected abstract String getSchemaQuery();
 
+  /**
+   * 获取所有的表名集合的sql
+   */
   @Override
   protected String getListTablesQuery() {
     return
@@ -47,6 +52,9 @@ public abstract class InformationSchemaManager
     + "WHERE TABLE_SCHEMA = (" + getSchemaQuery() + ")";
   }
 
+  /**
+   * 给定表名,返回该表的所有属性集合的sql
+   */
   @Override
   protected String getListColumnsQuery(String tableName) {
     return
@@ -55,6 +63,9 @@ public abstract class InformationSchemaManager
     + "  AND TABLE_NAME = '" + tableName + "' ";
   }
 
+  /**
+   * 获取给定表名的主键的sql,比如执行该sql返回值id
+   */
   @Override
   protected String getPrimaryKeyQuery(String tableName) {
     return

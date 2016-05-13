@@ -79,6 +79,9 @@ public class MySQLManager
     }
   }
 
+  /**
+   * 返回给定table对应的主键的sql
+   */
   @Override
   protected String getPrimaryKeyQuery(String tableName) {
     return "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS "
@@ -87,6 +90,7 @@ public class MySQLManager
          + "AND COLUMN_KEY = 'PRI'";
   }
 
+  //返回第一行该table的信息
   @Override
   protected String getColNamesQuery(String tableName) {
     // Use mysql-specific hints and LIMIT to return fast
@@ -388,6 +392,7 @@ public class MySQLManager
     }
   }
 
+  //获取所有的数据库名字的sql
   @Override
   protected String getListDatabasesQuery() {
     return "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";

@@ -289,6 +289,7 @@ public class DBConfiguration {
         props.put("user", username);
       }
 
+      //
       if (password != null) {
         props.put("password", password);
       }
