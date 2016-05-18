@@ -67,14 +67,15 @@ public final class ClassLoaderStack {
         // Test to see if testClassName is already available. If so, do not
         // load this jar.
         LOG.debug("Checking for existing class: " + testClassName);
-        Class.forName(testClassName, true, prevClassLoader);
+        Class.forName(testClassName, true, prevClassLoader);//查看该classloader能否加载该class,如果能加载,则不用加载特殊的jar包了,直接返回即可
         LOG.debug("Class is already available. Skipping jar " + jarFile);
         return prevClassLoader;
       } catch (ClassNotFoundException cnfe) {
-        // Expected this; we need to load the jar. continue.
+        // Expected this; we need to load the jar. continue.如果异常,我们就要加载该jar包
       }
     }
 
+      //添加jar包到classloader上,并且尝试加载class,如果成功,则设置classloader为新的classloader
     String urlPath = "jar:" + new File(jarFile).toURI().toURL() + "!/";
     LOG.debug("Attempting to load jar through URL: " + urlPath);
     LOG.debug("Previous classloader is " + prevClassLoader);

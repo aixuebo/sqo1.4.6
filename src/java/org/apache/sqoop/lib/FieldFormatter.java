@@ -82,10 +82,10 @@ public final class FieldFormatter {
     char enclose = delimiters.getEnclosedBy();
     boolean encloseRequired = delimiters.isEncloseRequired();
 
-    // true if we can use an escape character.
+    // true if we can use an escape character.true表示你要使用转义字符
     boolean escapingLegal =
         com.cloudera.sqoop.lib.DelimiterSet.NULL_CHAR != escape;
-    String withEscapes;
+    String withEscapes;//经过是否转义字符处理后的字符串
 
     if (null == str) {
       return null;
@@ -93,9 +93,10 @@ public final class FieldFormatter {
 
     if (escapingLegal) {
       // escaping is legal. Escape any instances of the escape char itself.
+      //将转义字符 替换成两个转义字符,比如\替换成\\
       withEscapes = str.replace("" + escape, "" + escape + escape);
     } else {
-      // no need to double-escape
+      // no need to double-escape说明不需要进行转义字符处理
       withEscapes = str;
     }
 
@@ -124,6 +125,7 @@ public final class FieldFormatter {
 
     boolean actuallyDoEnclose = encloseRequired;
     if (!actuallyDoEnclose) {
+    	
       // check if the string requires enclosing.
       char [] mustEncloseFor = new char[2];
       mustEncloseFor[0] = delimiters.getFieldsTerminatedBy();

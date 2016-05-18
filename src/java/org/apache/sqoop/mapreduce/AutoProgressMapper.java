@@ -51,6 +51,7 @@ public class AutoProgressMapper<KEYIN, VALIN, KEYOUT, VALOUT>
 
   /**
    * Run the mapping process for this task, wrapped in an auto-progress system.
+   * 运行map-reduce方法处理每一个task的时候,插入一个线程,去定期发送信息
    */
   @Override
   public void run(Context context) throws IOException, InterruptedException {

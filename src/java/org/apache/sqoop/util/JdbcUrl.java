@@ -29,6 +29,7 @@ import org.apache.commons.logging.LogFactory;
  * by Java's java.net.URL class.
  * java.net.URL does not support multi:part:scheme:// components, which
  * virtually all JDBC connect string URLs have.
+ * 例如:jdbc:mysql://ip:port/database?
  */
 public final class JdbcUrl {
 
@@ -40,10 +41,11 @@ public final class JdbcUrl {
   /**
    * @return the database name from the connect string, which is typically the
    * 'path' component, or null if we can't.
+   * 返回连接串对应的数据库名称
    */
   public static String getDatabaseName(String connectString) {
     try {
-      String sanitizedString = null;
+      String sanitizedString = null;//将字符串转换成http的标准url,方便提取数据
       int schemeEndOffset = connectString.indexOf("://");
       if (-1 == schemeEndOffset) {
         // couldn't find one? try our best here.
@@ -54,8 +56,8 @@ public final class JdbcUrl {
         sanitizedString = "http" + connectString.substring(schemeEndOffset);
       }
 
-      URL connectUrl = new URL(sanitizedString);
-      String databaseName = connectUrl.getPath();
+      URL connectUrl = new URL(sanitizedString);//组装成url对象
+      String databaseName = connectUrl.getPath();//数据库名称
       if (null == databaseName) {
         return null;
       }
@@ -76,6 +78,7 @@ public final class JdbcUrl {
 
   /**
    * @return the hostname from the connect string, or null if we can't.
+   * 返回连接串对应的host
    */
   public static String getHostName(String connectString) {
     try {
@@ -100,6 +103,7 @@ public final class JdbcUrl {
 
   /**
    * @return the port from the connect string, or -1 if we can't.
+   * 返回连接串对应的port
    */
   public static int getPort(String connectString) {
     try {

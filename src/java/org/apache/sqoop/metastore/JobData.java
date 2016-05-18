@@ -24,6 +24,9 @@ import com.cloudera.sqoop.tool.SqoopTool;
 /**
  * Container for all job data that should be stored to a
  * permanent resource.
+ * 表示每一个job内容
+ * 即job执行的所有属性存储在opts中
+ * 该job属于什么job,则存储在tool中
  */
 public class JobData {
   private SqoopOptions opts;

@@ -47,8 +47,8 @@ public final class MySQLUtils {
 
   public static final Log LOG = LogFactory.getLog(MySQLUtils.class.getName());
 
-  public static final String MYSQL_DUMP_CMD = "mysqldump";
-  public static final String MYSQL_IMPORT_CMD = "mysqlimport";
+  public static final String MYSQL_DUMP_CMD = "mysqldump";//mysql的dump命令
+  public static final String MYSQL_IMPORT_CMD = "mysqlimport";//mysql的import命令
 
   public static final String OUTPUT_FIELD_DELIM_KEY =
       DelimiterSet.OUTPUT_FIELD_DELIM_KEY;
@@ -93,6 +93,7 @@ public final class MySQLUtils {
   /**
    * Writes the user's password to a tmp file with 0600 permissions.
    * @return the filename used.
+   * 将密码字符串写入到文件中
    */
   public static String writePasswordFile(Configuration conf)
       throws IOException {
@@ -110,7 +111,7 @@ public final class MySQLUtils {
     // thing, and returns the correct exit status. But given our inability to
     // re-read the permissions associated with a file, we'll have to make do
     // with this.
-    String password = DBConfiguration.getPassword((JobConf) conf);
+    String password = DBConfiguration.getPassword((JobConf) conf);//获取密码字符串
     BufferedWriter w = new BufferedWriter(new OutputStreamWriter(
         new FileOutputStream(tempFile)));
     w.write("[client]\n");

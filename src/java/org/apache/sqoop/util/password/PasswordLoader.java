@@ -33,6 +33,7 @@ abstract public class PasswordLoader {
    * @param configuration Configuration object.
    * @return Password
    * @throws IOException
+   * 通过给定path加载密码,返回密码的String字符串
    */
   public abstract String loadPassword(String path, Configuration configuration) throws IOException;
 

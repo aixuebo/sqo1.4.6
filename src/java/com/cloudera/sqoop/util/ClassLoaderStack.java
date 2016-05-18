@@ -31,6 +31,7 @@ public final class ClassLoaderStack {
     org.apache.sqoop.util.ClassLoaderStack.setCurrentClassLoader(cl);
   }
 
+  //添加jar包到环境中,jar包中有一个类,就是testClassName
   public static ClassLoader addJarFile(String jarFile, String testClassName)
       throws IOException {
     return org.apache.sqoop.util.ClassLoaderStack.addJarFile(jarFile,

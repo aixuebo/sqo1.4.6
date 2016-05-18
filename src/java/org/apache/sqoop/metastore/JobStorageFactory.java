@@ -36,15 +36,19 @@ public class JobStorageFactory {
   /**
    * Configuration key describing the list of JobStorage implementations
    * to use to handle jobs.
+   * 查看job存储用什么实现
    */
   public static final String AVAILABLE_STORAGES_KEY =
       "sqoop.job.storage.implementations";
 
-  /** The default list of available JobStorage implementations. */
+  /** The default list of available JobStorage implementations.
+   * 默认的两个实现job存储的实现方案
+   **/
   private static final String DEFAULT_AVAILABLE_STORAGES =
       "com.cloudera.sqoop.metastore.hsqldb.HsqldbJobStorage,"
       + "com.cloudera.sqoop.metastore.hsqldb.AutoHsqldbStorage";
 
+  //初始化可以更改job实现类,即自定义的实现类可以被允许实现在这里
   public JobStorageFactory(Configuration config) {
     this.conf = config;
 
@@ -60,8 +64,12 @@ public class JobStorageFactory {
    * instance of it -- or null if no JobStorage instance is appropriate.
    */
   public JobStorage getJobStorage(Map<String, String> descriptor) {
+
+    //获取所有的job引擎
     List<JobStorage> storages = ConfigurationHelper.getInstances(
         conf, AVAILABLE_STORAGES_KEY, JobStorage.class);
+
+    //循环每一个job引擎,看看参数匹配那一个job引擎,找到后返回匹配的job引擎即可
     for (JobStorage stor : storages) {
       if (stor.canAccept(descriptor)) {
         return stor;

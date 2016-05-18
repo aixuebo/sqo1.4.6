@@ -111,20 +111,22 @@ public class MySQLDumpMapper
             // this line is of the form "INSERT .. VALUES ( actual value text
             // );" strip the leading preamble up to the '(' and the trailing
             // ');'.
+            //例如 INSERT INTO `bank_card` VALUES (141,'a3af641893c14ed4aba71355429cfbc9','董小满','421022199302095438','6225880156655871',NULL,'03080000','招商银行','2',NULL,'0','iOS',NULL,NULL,NULL,NULL,'2015-05-14 08:23:56',NULL,NULL,NULL,NULL,NULL);
             if (preambleLen == -1) {
               // we haven't determined how long the preamble is. It's constant
               // across all lines, so just figure this out once.
+            	//只要value信息,因为一个表的sql信息都一样,因此只是第一次初始化的时候初始化该值即可
               String recordStartMark = "VALUES (";
               preambleLen = inLine.indexOf(recordStartMark)
                   + recordStartMark.length();
             }
 
             // chop off the leading and trailing text as we write the
-            // output to HDFS.
+            // output to HDFS.去除sql中的);字符串
             int len = inLine.length() - 2 - preambleLen;
             context.write(inLine.substring(preambleLen, inLine.length() - 2)
                 + "\n", null);
-            counters.addBytes(1 + len);
+            counters.addBytes(1 + len);//统计写入多少个字节
           }
         } catch (IOException ioe) {
           LOG.error("IOException reading from mysqldump: " + ioe.toString());
@@ -188,10 +190,10 @@ public class MySQLDumpMapper
         this.counters = ctrs;
       }
 
-      private static final char MYSQL_FIELD_DELIM = ',';
-      private static final char MYSQL_RECORD_DELIM = '\n';
-      private static final char MYSQL_ENCLOSE_CHAR = '\'';
-      private static final char MYSQL_ESCAPE_CHAR = '\\';
+      private static final char MYSQL_FIELD_DELIM = ',';//mysql的列分隔符
+      private static final char MYSQL_RECORD_DELIM = '\n';//mysql的每一条记录分割
+      private static final char MYSQL_ENCLOSE_CHAR = '\'';//字符串用''引用起来
+      private static final char MYSQL_ESCAPE_CHAR = '\\';//对\的转义字符
       private static final boolean MYSQL_ENCLOSE_REQUIRED = false;
 
       private static final RecordParser MYSQLDUMP_PARSER;
@@ -256,7 +258,7 @@ public class MySQLDumpMapper
             }
 
             // Wrap the input string in a char buffer that ignores the leading
-            // and trailing text.
+            // and trailing text.对insert的sql中字符进行特殊处理
             CharBuffer charbuf = CharBuffer.wrap(inLine, preambleLen,
                 inLine.length() - 2);
 
@@ -276,7 +278,7 @@ public class MySQLDumpMapper
             StringBuilder sb = new StringBuilder();
             int recordLen = 1; // for the delimiter.
             for (String field : fields) {
-              if (!first) {
+              if (!first) {//为每一个属性输出的时候增加逗号
                 sb.append(outputFieldDelimStr);
               } else {
                 first = false;
@@ -288,9 +290,9 @@ public class MySQLDumpMapper
               recordLen += fieldStr.length();
             }
 
-            sb.append(outputRecordDelimStr);
-            context.write(sb.toString(), null);
-            counters.addBytes(recordLen);
+            sb.append(outputRecordDelimStr);//添加换行符
+            context.write(sb.toString(), null);//添加一行的信息
+            counters.addBytes(recordLen);//添加总字节数统计
           }
         } catch (IOException ioe) {
           LOG.error("IOException reading from mysqldump: " + ioe.toString());
@@ -319,6 +321,11 @@ public class MySQLDumpMapper
   /**
    * Import the table into HDFS by using mysqldump to pull out the data from
    * the database and upload the files directly to HDFS.
+   * @splitConditions 拆分条件,应用于where条件
+   * 
+   * 执行的命令
+   * mysqldump --host=? --port=? --user=? -p? --skip-opt --compact --no-create-db --no-create-info --quick --single-transaction  -w 'id >140 AND id < 150' odsdata_jlc bank_card >aaa.log
+   * 
    */
   public void map(String splitConditions, NullWritable val, Context context)
       throws IOException, InterruptedException {
@@ -362,7 +369,7 @@ public class MySQLDumpMapper
       }
 
       // Don't use the --where="<whereClause>" version because spaces in it can
-      // confuse Java, and adding in surrounding quotes confuses Java as well.
+      // confuse Java, and adding in surrounding quotes confuses Java as well.添加where条件,对指定where进行dump数据
       String whereClause = conf.get(MySQLUtils.WHERE_CLAUSE_KEY, "(1=1)")
           + " AND (" + splitConditions + ")";
       args.add("-w");

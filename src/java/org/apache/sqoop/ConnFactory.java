@@ -196,6 +196,7 @@ public class ConnFactory {
    * Add a ManagerFactory class to the list that we instantiate.
    * @param conf the Configuration to set.
    * @param factory the ManagerFactory class name to add.
+   * 追加配置信息
    */
   private void addManager(Configuration conf, String factory) {
     String curVal = conf.get(FACTORY_CLASS_NAMES_KEY);
@@ -211,6 +212,7 @@ public class ConnFactory {
    * names from there.
    * @param conf the configuration to populate.
    * @param f the file containing the configuration data to add.
+   * 从文件中获取connect配置信息
    */
   private void addManagersFromFile(Configuration conf, File f) {
     BufferedReader r = null;
@@ -227,7 +229,7 @@ public class ConnFactory {
         addManager(conf, factory);
 
         String jarName = entry.getValue().toString();
-        if (jarName.length() > 0) {
+        if (jarName.length() > 0) {//将对应的jar包添加到环境中
           ClassLoaderStack.addJarFile(jarName, factory);
           LOG.debug("Added factory " + factory + " in jar " + jarName
               + " specified by " + f);

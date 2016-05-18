@@ -35,6 +35,8 @@ import com.cloudera.sqoop.lib.ClobRef;
  * Java types, and do serialization of these types to/from DataInput/DataOutput
  * for use with Hadoop's Writable implementation. This supports null values
  * for all types.
+ * 1.从ResultSet中获取每一个属性对应的值
+ * 2.向预编译statement中设置value
  */
 public final class JdbcWritableBridge {
 

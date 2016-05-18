@@ -86,6 +86,7 @@ public class JobBase {
 
   /**
    * @return the mapper class to use for the job.
+   *
    */
   protected Class<? extends Mapper> getMapperClass()
       throws ClassNotFoundException {

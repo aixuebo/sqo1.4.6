@@ -44,12 +44,15 @@ public class HsqldbMetaStore {
   public static final Log LOG = LogFactory.getLog(
       HsqldbMetaStore.class.getName());
 
-  /** Where on the local fs does the metastore put files? */
+  /** Where on the local fs does the metastore put files?
+   * 在本地文件系统中,元数据存储在哪里
+   **/
   public static final String META_STORAGE_LOCATION_KEY =
       "sqoop.metastore.server.location";
 
   /**
    * What port does the metastore listen on?
+   * 元数据在什么端口上监听
    */
   public static final String META_SERVER_PORT_KEY =
       "sqoop.metastore.server.port";
@@ -70,6 +73,8 @@ public class HsqldbMetaStore {
   /**
    * Determine the user's home directory and return a file path
    * under this root where the shared metastore can be placed.
+   *
+   * 获取路径$user.home/.sqoop/shared-metastore.db
    */
   private String getHomeDirFilePath() {
     String homeDir = System.getProperty("user.home");
@@ -87,17 +92,19 @@ public class HsqldbMetaStore {
       return;
     }
 
+      //获取本地存储路径
     fileLocation = conf.get(META_STORAGE_LOCATION_KEY, null);
-    if (null == fileLocation) {
+    if (null == fileLocation) {//没有设置,则默认在home目录下
       fileLocation = getHomeDirFilePath();
       LOG.warn("The location for metastore data has not been explicitly set. "
           + "Placing shared metastore files in " + fileLocation);
     }
 
+      //获取监听端口号
     this.port = conf.getInt(META_SERVER_PORT_KEY, DEFAULT_PORT);
   }
 
-
+ //开启服务
   public void start() {
     try {
       if (server != null) {
@@ -127,7 +134,7 @@ public class HsqldbMetaStore {
   public void waitForServer() {
     while (true) {
       int curState = server.getState();
-      if (curState == ServerConstants.SERVER_STATE_SHUTDOWN) {
+      if (curState == ServerConstants.SERVER_STATE_SHUTDOWN) {//如果当前shutdown了,则退出循环
         LOG.info("Got shutdown notification");
         break;
       }
@@ -143,6 +150,7 @@ public class HsqldbMetaStore {
 
   /**
    * Connects to the server and instructs it to shutdown.
+   * 执行shutdown命令
    */
   public void shutdown() {
     // Send the SHUTDOWN command to the server via SQL.

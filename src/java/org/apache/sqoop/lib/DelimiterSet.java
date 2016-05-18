@@ -29,7 +29,7 @@ public class DelimiterSet implements Cloneable {
 
   // If these next two fields are '\000', then they are ignored.
   private char enclosedBy;
-  private char escapedBy;
+  private char escapedBy;//转义字符
 
   // If true, then the enclosed-by character is applied to every
   // field, not just ones containing embedded delimiters.

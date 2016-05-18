@@ -34,6 +34,7 @@ import java.io.IOException;
  * http://creativecommons.org/licenses/by/3.0/
  *
  * Method by Alex Wong (javapractices.com)
+ * 递归获取一个目录下所有的文件集合
  */
 public final class FileListing {
 
@@ -60,6 +61,7 @@ public final class FileListing {
   * Files found; the List is sorted using File.compareTo().
   *
   * @param aStartingDir is a valid directory, which can be read.
+  * 获取该目录下所有子目录的所有文件集合,但是不需要排序
   */
   public static List<File> getFileListing(File aStartingDir)
       throws FileNotFoundException {
@@ -69,6 +71,7 @@ public final class FileListing {
     return result;
   }
 
+  //获取该目录下所有子目录的所有文件集合,但是不需要排序
   private static List<File> getFileListingNoSort(File aStartingDir)
       throws FileNotFoundException {
     List<File> result = new ArrayList<File>();
@@ -88,6 +91,7 @@ public final class FileListing {
 
   /**
   * Directory is valid if it exists, does not represent a file, and can be read.
+   * 校验该参数是目录,并且是存在的、可读的目录
   */
   private static void validateDirectory(File aDirectory)
       throws FileNotFoundException {
@@ -110,6 +114,7 @@ public final class FileListing {
   /**
    * Recursively delete a directory and all its children.
    * @param dir is a valid directory.
+   * 递归删除file文件或者目录下所有内容
    */
   public static void recursiveDeleteDir(File dir) throws IOException {
     if (!dir.exists()) {

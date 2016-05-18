@@ -30,6 +30,7 @@ import com.cloudera.sqoop.manager.ConnManager;
 
 /**
  * Utility class; returns the locations of various jars.
+ * 从classpath下找到给定class对应的jar包
  */
 public final class Jars {
 
@@ -41,6 +42,7 @@ public final class Jars {
 
   /**
    * @return the path to the main Sqoop jar.
+   * 找到jars类的sqoop的jar包
    */
   public static String getSqoopJarPath() {
     return getJarPathForClass(Jars.class);
@@ -49,6 +51,7 @@ public final class Jars {
   /**
    * Return the jar file path that contains a particular class.
    * Method mostly cloned from o.a.h.mapred.JobConf.findContainingJar().
+   * 将参数class,找到对应的所在jar包
    */
   public static String getJarPathForClass(Class<? extends Object> classObj) {
     ClassLoader loader = classObj.getClassLoader();

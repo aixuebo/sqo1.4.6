@@ -21,6 +21,8 @@ package org.apache.sqoop.tool;
 /**
  * Describes a SqoopTool.
  * This class should be final
+ * 自定义的一个工具描述
+ * 包含工具简称  具体实现class  描述信息
  */
 public class ToolDesc {
   private final String toolName;

@@ -20,6 +20,7 @@ package org.apache.sqoop.lib;
 /**
  * Parse string representations of boolean values into boolean
  * scalar types.
+ * 解析boolean,将"true", "t", "yes", "on", "1"都转换成true
  */
 public final class BooleanParser {
 

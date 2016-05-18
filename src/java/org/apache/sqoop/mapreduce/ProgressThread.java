@@ -34,18 +34,21 @@ public class ProgressThread extends Thread {
    * Total number of millis for which progress will be reported by the
    * auto-progress thread. If this is zero, then the auto-progress thread will
    * never voluntarily exit.
+   * 最大的处理时间,超过该时间则要主动退出
    */
   private int maxProgressPeriod;
 
   /**
    * Number of milliseconds to sleep for between loop iterations. Must be less
    * than report interval.
+   * 每次循环后要休息多久,该时间必须比报道周期小
    */
   private int sleepInterval;
 
   /**
    * Number of milliseconds between calls to Reporter.progress().
    * Should be a multiple of the sleepInterval.
+   * 报道周期时间间隔
    */
   private int reportInterval;
 
@@ -65,11 +68,11 @@ public class ProgressThread extends Thread {
   // Disable max progress, by default.
   public static final int DEFAULT_MAX_PROGRESS = 0;
 
-  private volatile boolean keepGoing; // While this is true, thread runs.
+  private volatile boolean keepGoing; // While this is true, thread runs.false表示停止运行
 
   private TaskInputOutputContext context;
   private long startTimeMillis;
-  private long lastReportMillis;
+  private long lastReportMillis;//上一次报道该任务情况时间
 
   public ProgressThread(final TaskInputOutputContext ctxt, Log log) {
     this.context = ctxt;
@@ -130,6 +133,7 @@ public class ProgressThread extends Thread {
     while (this.keepGoing) {
       long curTimeMillis = System.currentTimeMillis();
 
+      //超时了,则退出
       if (MAX_PROGRESS != 0
           && curTimeMillis - this.startTimeMillis > MAX_PROGRESS) {
         this.keepGoing = false;

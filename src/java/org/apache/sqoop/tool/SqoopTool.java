@@ -52,6 +52,7 @@ import com.cloudera.sqoop.tool.ToolDesc;
  * Base class for Sqoop subprograms (e.g., SqoopImport, SqoopExport, etc.)
  * Allows subprograms to configure the arguments they accept and
  * provides an entry-point to the subprogram.
+ * sqoop子程序的抽象类
  */
 public abstract class SqoopTool {
 
@@ -60,9 +61,13 @@ public abstract class SqoopTool {
   /**
    * Configuration key that specifies the set of ToolPlugin instances to load
    * before determining which SqoopTool instance to load.
+   * 自定义插件在配置文件中的key,value是所有自定义的class对应的全路径,多个用逗号分割
    */
   public static final String TOOL_PLUGINS_KEY = "sqoop.tool.plugins";
 
+    /**
+     * 两个对象的key都是工具名称,value一个是具体的class,一个是该工具的描述
+     */
   private static final Map<String, Class<? extends SqoopTool>> TOOLS;
   private static final Map<String, String> DESCRIPTIONS;
 
@@ -124,6 +129,7 @@ public abstract class SqoopTool {
   /**
    * Add tool to available set of SqoopTool instances using the ToolDesc
    * struct as the sole argument.
+   * 注册一个自定义工具
    */
   private static void registerTool(ToolDesc toolDescription) {
     registerTool(toolDescription.getName(), toolDescription.getToolClass(),
@@ -135,12 +141,13 @@ public abstract class SqoopTool {
    * to allow external tool definitions.
    *
    * @return the Configuration used to load the plugins.
+   * 加载自定义插件
    */
   public static Configuration loadPlugins(Configuration conf) {
     conf = loadPluginsFromConfDir(conf);
     List<ToolPlugin> plugins =
         org.apache.sqoop.config.ConfigurationHelper.getInstances(
-            conf, TOOL_PLUGINS_KEY, ToolPlugin.class);
+            conf, TOOL_PLUGINS_KEY, ToolPlugin.class);//获取所有的插件集合
     for (ToolPlugin plugin : plugins) {
       LOG.debug("Loading plugin: " + plugin.getClass().getName());
       List<ToolDesc> descriptions = plugin.getTools();
@@ -165,9 +172,11 @@ public abstract class SqoopTool {
    *
    * @param conf the current configuration to populate with class names.
    * @return conf again, after possibly populating sqoop.tool.plugins.
+   * 加载自定义工具
+   *
    */
   private static Configuration loadPluginsFromConfDir(Configuration conf) {
-    if (conf.get(TOOL_PLUGINS_KEY) != null) {
+    if (conf.get(TOOL_PLUGINS_KEY) != null) {//一般情况下都是空的,因为如果有内容的话,就说明自定义的class也在sqoop包里面,这个不现实,因此这个就是空,通过下面的方式配置所有的第三方jar和class被加载
       LOG.debug(TOOL_PLUGINS_KEY + " is set; ignoring tools.d");
       return conf;
     }
@@ -188,6 +197,7 @@ public abstract class SqoopTool {
       String [] fileNames = toolsDir.list();
       Arrays.sort(fileNames);
 
+        //将所有的第三方提供的自定义插件配置文件都加载到classloader中
       for (String fileName : fileNames) {
         File f = new File(toolsDir, fileName);
         if (f.isFile()) {
@@ -207,6 +217,7 @@ public abstract class SqoopTool {
    * names from there.
    * @param conf the configuration to populate.
    * @param f the file containing the configuration data to add.
+   * 配置文件,配置key是自定义的插件的class全路径,value是该插件所在的jar包路径,将该jar包加载到classloader中
    */
   private static void loadPluginsFromFile(Configuration conf, File f) {
     Reader r = null;
@@ -248,6 +259,7 @@ public abstract class SqoopTool {
   /**
    * Add the specified plugin class name to the configuration string
    * listing plugin classes.
+   * 向key中追加自定义工具的class全路径
    */
   private static void addPlugin(Configuration conf, String pluginName) {
     String existingPlugins = conf.get(TOOL_PLUGINS_KEY);
@@ -263,6 +275,7 @@ public abstract class SqoopTool {
 
   /**
    * @return the list of available tools.
+   * 返回所有工具的名字集合
    */
   public static Set<String> getToolNames() {
     return TOOLS.keySet();
@@ -271,6 +284,7 @@ public abstract class SqoopTool {
   /**
    * @return the SqoopTool instance with the provided name, or null
    * if no such tool exists.
+   * 通过工具名字,返回对应的class对象
    */
   public static SqoopTool getTool(String toolName) {
     Class<? extends SqoopTool> cls = TOOLS.get(toolName);
@@ -291,12 +305,13 @@ public abstract class SqoopTool {
   /**
    * @return the user-friendly description for a tool, or null if the tool
    * cannot be found.
+   * 返回某个工具的描述信息
    */
   public static String getToolDescription(String toolName) {
     return DESCRIPTIONS.get(toolName);
   }
 
-  /** The name of the current tool. */
+  /** The name of the current tool. 当前使用什么工具*/
   private String toolName;
 
   /** Arguments that remained unparsed after parseArguments. */
@@ -474,6 +489,7 @@ public abstract class SqoopTool {
    * </p>
    *
    * <p>See also: c.c.s.util.Jars.getJarPathForClass()</p>
+   * 依赖的第三方jar集合
    */
   public List<String> getDependencyJars() {
     // Default behavior: no additional dependencies.
@@ -486,6 +502,7 @@ public abstract class SqoopTool {
    * before doing work, to ensure that all of its dependencies get classloaded
    * properly. Note that dependencies will not be available until after the
    * tool is already constructed.
+   * 将依赖的jar包添加到classloader里面
    */
   protected void loadDependencyJars(SqoopOptions options) throws IOException {
     List<String> deps = getDependencyJars();
@@ -493,6 +510,7 @@ public abstract class SqoopTool {
       return;
     }
 
+      //将依赖的jar包添加到classloader里面
     for (String depFilename : deps) {
       LOG.debug("Loading dependency: " + depFilename);
       ClassLoaderStack.addJarFile(depFilename, null);

@@ -44,30 +44,52 @@ import com.cloudera.sqoop.tool.SqoopTool;
 /**
  * JobStorage implementation that uses an HSQLDB-backed database to
  * hold job information.
+ *
+ * 两个表存储信息
+ * 一个表存储全局的key=value信息
+ * CREATE TABLE SQOOP_ROOT (version INT,propname VARCHAR(128) NOT NULL,propval VARCHAR(256))
+ *
+ *
+ * 一个表存储每一个job的描述信息
+  CREATE TABLE SQOOP_SESSIONS(
+ job_name VARCHAR(64) NOT NULL,//job的名称
+ propname VARCHAR(128) NOT NULL,//该job的一个key信息
+ propval VARCHAR(1024),//该job的一个key对应的value信息
+ propclass VARCHAR(32) NOT NULL//该key-value所对应的域,是schema还是SqoopOptions等
+ )
+ *
  */
 public class HsqldbJobStorage extends JobStorage {
 
   public static final Log LOG = LogFactory.getLog(
       HsqldbJobStorage.class.getName());
 
-  /** descriptor key identifying the connect string for the metastore. */
+  /** descriptor key identifying the connect string for the metastore.
+   *  存储容器引擎的连接串
+   **/
   public static final String META_CONNECT_KEY = "metastore.connect.string";
 
   /** descriptor key identifying the username to use when connecting
    * to the metastore.
+   * 存储容器引擎的用户名
    */
   public static final String META_USERNAME_KEY = "metastore.username";
 
   /** descriptor key identifying the password to use when connecting
    * to the metastore.
+   * 存储容器引擎的密码
    */
   public static final String META_PASSWORD_KEY = "metastore.password";
 
 
-  /** Default name for the root metadata table in HSQLDB. */
+  /** Default name for the root metadata table in HSQLDB.
+   * 默认的table表名,用于存储全局的key-value键值对
+   **/
   private static final String DEFAULT_ROOT_TABLE_NAME = "SQOOP_ROOT";
 
-  /** Configuration key used to override root table name. */
+  /** Configuration key used to override root table name.
+   * table表名,用于存储全局的key-value键值对
+   **/
   public static final String ROOT_TABLE_NAME_KEY =
        "sqoop.hsqldb.root.table.name";
 
@@ -78,16 +100,20 @@ public class HsqldbJobStorage extends JobStorage {
   /** The current version number for the schema edition. */
   private static final int CUR_STORAGE_VERSION = 0;
 
-  /** root metadata table key used to define the job table name. */
+  /** root metadata table key used to define the job table name.
+   *  存储当前job的表名字
+   **/
   private static final String SESSION_TABLE_KEY =
       "sqoop.hsqldb.job.info.table";
 
-  /** Default value for SESSION_TABLE_KEY. */
+  /** Default value for SESSION_TABLE_KEY. job数据库的表名*/
   private static final String DEFAULT_SESSION_TABLE_NAME =
       "SQOOP_SESSIONS";
 
   /** Per-job key with propClass 'schema' that defines the set of
-   * properties valid to be defined for propClass 'SqoopOptions'. */
+   * properties valid to be defined for propClass 'SqoopOptions'.
+   * 为每一个job设置唯一ID
+   **/
   private static final String PROPERTY_SET_KEY =
       "sqoop.property.set.id";
 
@@ -97,10 +123,10 @@ public class HsqldbJobStorage extends JobStorage {
   // The following are values for propClass in the v0 schema which
   // describe different aspects of the stored metadata.
 
-  /** Property class for properties about the stored data itself. */
+  /** Property class for properties about the stored data itself.表示是描述信息 */
   private static final String PROPERTY_CLASS_SCHEMA = "schema";
 
-  /** Property class for properties that are loaded into SqoopOptions. */
+  /** Property class for properties that are loaded into SqoopOptions.表示sqoop的属性信息 */
   private static final String PROPERTY_CLASS_SQOOP_OPTIONS = "SqoopOptions";
 
   /** Property class for properties that are loaded into a Configuration. */
@@ -113,19 +139,19 @@ public class HsqldbJobStorage extends JobStorage {
   private static final String SQOOP_TOOL_KEY = "sqoop.tool";
 
 
-  private Map<String, String> connectedDescriptor;
-  private String metastoreConnectStr;
-  private String metastoreUser;
-  private String metastorePassword;
-  private Connection connection;
+  private Map<String, String> connectedDescriptor;//配置属性
+  private String metastoreConnectStr;//连接串
+  private String metastoreUser;//用户名
+  private String metastorePassword;//密码
+  private Connection connection;//java.sql对象,因此公用mysql等都可以使用该API
+
+    // After connection to the database and initialization of the
+    // schema, this holds the name of the job table.
+   private String jobTableName;//存储job详细信息的表,默认是SQOOP_SESSIONS表
 
   protected Connection getConnection() {
     return this.connection;
   }
-
-  // After connection to the database and initialization of the
-  // schema, this holds the name of the job table.
-  private String jobTableName;
 
   protected void setMetastoreConnectStr(String connectStr) {
     this.metastoreConnectStr = connectStr;
@@ -139,7 +165,7 @@ public class HsqldbJobStorage extends JobStorage {
     this.metastorePassword = pass;
   }
 
-  private static final String DB_DRIVER_CLASS = "org.hsqldb.jdbcDriver";
+  private static final String DB_DRIVER_CLASS = "org.hsqldb.jdbcDriver";//驱动不同,只是更换不同的jar包即可,mysql、oracle等都是可以被使用的
 
   /**
    * Set the descriptor used to open() this storage.
@@ -151,6 +177,7 @@ public class HsqldbJobStorage extends JobStorage {
   @Override
   /**
    * Initialize the connection to the database.
+   * 初始化连接串、用户名、密码
    */
   public void open(Map<String, String> descriptor) throws IOException {
     setMetastoreConnectStr(descriptor.get(META_CONNECT_KEY));
@@ -181,11 +208,11 @@ public class HsqldbJobStorage extends JobStorage {
       connection.setAutoCommit(false);
 
       // Initialize the root schema.
-      if (!rootTableExists()) {
+      if (!rootTableExists()) {//创建默认table
         createRootTable();
       }
 
-      // Check the schema version.
+      // Check the schema version.获取当前的版本号
       String curStorageVerStr = getRootProperty(STORAGE_VERSION_KEY, null);
       int actualStorageVer = -1;
       try {
@@ -193,7 +220,7 @@ public class HsqldbJobStorage extends JobStorage {
       } catch (NumberFormatException nfe) {
         LOG.warn("Could not interpret as a number: " + curStorageVerStr);
       }
-      if (actualStorageVer != CUR_STORAGE_VERSION) {
+      if (actualStorageVer != CUR_STORAGE_VERSION) {//版本号必须与当前持有的版本号一致
         LOG.error("Can not interpret metadata schema");
         LOG.error("The metadata schema version is " + curStorageVerStr);
         LOG.error("The highest version supported is " + CUR_STORAGE_VERSION);
@@ -217,6 +244,10 @@ public class HsqldbJobStorage extends JobStorage {
     }
   }
 
+    /**
+     * 关闭与数据库的连接即可
+     * @throws IOException
+     */
   @Override
   public void close() throws IOException {
     if (null != this.connection) {
@@ -248,6 +279,7 @@ public class HsqldbJobStorage extends JobStorage {
 
   @Override
   /** {@inheritDoc} */
+  //获取一个job的全部信息
   public JobData read(String jobName) throws IOException {
     try {
       if (!jobExists(jobName)) {
@@ -308,6 +340,12 @@ public class HsqldbJobStorage extends JobStorage {
     }
   }
 
+    /**
+     * 判断该jobname是否存在
+     * @param jobName
+     * @return
+     * @throws SQLException
+     */
   private boolean jobExists(String jobName) throws SQLException {
     PreparedStatement s = connection.prepareStatement(
         "SELECT COUNT(job_name) FROM " + this.jobTableName
@@ -336,6 +374,7 @@ public class HsqldbJobStorage extends JobStorage {
 
   @Override
   /** {@inheritDoc} */
+  //删除一个job的全部信息
   public void delete(String jobName) throws IOException {
     try {
       if (!jobExists(jobName)) {
@@ -364,6 +403,7 @@ public class HsqldbJobStorage extends JobStorage {
 
   @Override
   /** {@inheritDoc} */
+  //创建一个job
   public void create(String jobName, JobData data)
       throws IOException {
     try {
@@ -381,21 +421,22 @@ public class HsqldbJobStorage extends JobStorage {
 
   /**
    * Actually insert/update the resources for this job.
+   * 创建一个job
    */
   private void createInternal(String jobName, JobData data)
       throws IOException {
     try {
       LOG.debug("Creating job: " + jobName);
 
-      // Save the name of the Sqoop tool.
+      // Save the name of the Sqoop tool.设置是什么工具
       setV0Property(jobName, PROPERTY_CLASS_SCHEMA, SQOOP_TOOL_KEY,
           data.getSqoopTool().getToolName());
 
-      // Save the property set id.
+      // Save the property set id.为该job分配一个id
       setV0Property(jobName, PROPERTY_CLASS_SCHEMA, PROPERTY_SET_KEY,
           CUR_PROPERTY_SET_ID);
 
-      // Save all properties of the SqoopOptions.
+      // Save all properties of the SqoopOptions.设置该job的所有属性
       Properties props = data.getSqoopOptions().writeProperties();
       setV0Properties(jobName, PROPERTY_CLASS_SQOOP_OPTIONS, props);
 
@@ -447,6 +488,7 @@ public class HsqldbJobStorage extends JobStorage {
 
   @Override
   /** {@inheritDoc} */
+  //获取所有的job名称集合
   public List<String> list() throws IOException {
     ResultSet rs = null;
     try {
@@ -484,15 +526,16 @@ public class HsqldbJobStorage extends JobStorage {
     return conf.get(ROOT_TABLE_NAME_KEY, DEFAULT_ROOT_TABLE_NAME);
   }
 
+    //true表示table存在
   private boolean tableExists(String table) throws SQLException {
     LOG.debug("Checking for table: " + table);
     DatabaseMetaData dbmd = connection.getMetaData();
     String [] tableTypes = { "TABLE" };
-    ResultSet rs = dbmd.getTables(null, null, null, tableTypes);
+    ResultSet rs = dbmd.getTables(null, null, null, tableTypes);//获取全部table
     if (null != rs) {
       try {
         while (rs.next()) {
-          if (table.equalsIgnoreCase(rs.getString("TABLE_NAME"))) {
+          if (table.equalsIgnoreCase(rs.getString("TABLE_NAME"))) {//查看是否有table与参数相同,则说明该table存在
             LOG.debug("Found table: " + table);
             return true;
           }
@@ -506,11 +549,13 @@ public class HsqldbJobStorage extends JobStorage {
     return false;
   }
 
+    //查看该table是否存在在该数据库中
   private boolean rootTableExists() throws SQLException {
     String rootTableName = getRootTableName();
     return tableExists(rootTableName);
   }
 
+    //创建表
   private void createRootTable() throws SQLException {
     String rootTableName = getRootTableName();
     LOG.debug("Creating root table: " + rootTableName);
@@ -528,6 +573,7 @@ public class HsqldbJobStorage extends JobStorage {
       s.close();
     }
 
+      //在该表中设置一条信息
     setRootProperty(STORAGE_VERSION_KEY, null,
         Integer.toString(CUR_STORAGE_VERSION));
 
@@ -538,6 +584,7 @@ public class HsqldbJobStorage extends JobStorage {
   /**
    * Look up a value for the specified version (may be null) in the
    * root metadata table.
+   * 查询数据库,查询key=propertyName & version = version的时候,对应value的值
    */
   private String getRootProperty(String propertyName, Integer version)
       throws SQLException {
@@ -587,6 +634,7 @@ public class HsqldbJobStorage extends JobStorage {
   /**
    * Set a value for the specified version (may be null) in the root
    * metadata table.
+   * 更新数据库表,key value  以及对应的version
    */
   private void setRootProperty(String propertyName, Integer version,
       String val) throws SQLException {
@@ -594,16 +642,17 @@ public class HsqldbJobStorage extends JobStorage {
         + version + " => " + val);
 
     PreparedStatement s;
+    //查询当前数据库该key和version对应的值
     String curVal = getRootProperty(propertyName, version);
-    if (null == curVal) {
+    if (null == curVal) {//如果没有该值,则添加一条记录
       // INSERT the row.
       s = connection.prepareStatement("INSERT INTO " + getRootTableName()
           + " (propval, propname, version) VALUES ( ? , ? , ? )");
-    } else if (version == null) {
+    } else if (version == null) {//如果有该key对应的value,只是version=null,则更新该key对应的value,同时version还是为null
       // UPDATE an existing row with a null version
       s = connection.prepareStatement("UPDATE " + getRootTableName()
           + " SET propval = ? WHERE  propname = ? AND version IS NULL");
-    } else {
+    } else {//如果vesion不是null,则根据version更新该值
       // UPDATE an existing row with non-null version.
       s = connection.prepareStatement("UPDATE " + getRootTableName()
           + " SET propval = ? WHERE  propname = ? AND version = ?");
@@ -625,10 +674,10 @@ public class HsqldbJobStorage extends JobStorage {
    * Create the jobs table in the V0 schema.
    */
   private void createJobTable() throws SQLException {
-    String curTableName = DEFAULT_SESSION_TABLE_NAME;
+    String curTableName = DEFAULT_SESSION_TABLE_NAME;//获取job数据库的表名
     int tableNum = -1;
     while (true) {
-      if (tableExists(curTableName)) {
+      if (tableExists(curTableName)) {//如果该表存在,则根据下表创建新的表
         tableNum++;
         curTableName = DEFAULT_SESSION_TABLE_NAME + "_" + tableNum;
       } else {
@@ -638,6 +687,7 @@ public class HsqldbJobStorage extends JobStorage {
 
     // curTableName contains a table name that does not exist.
     // Create this table.
+      //创建表
     LOG.debug("Creating job storage table: " + curTableName);
     Statement s = connection.createStatement();
     try {
@@ -650,6 +700,7 @@ public class HsqldbJobStorage extends JobStorage {
           + "(job_name, propname, propclass))");
 
       // Then set a property in the root table pointing to it.
+       //在全局中存储当前的表名字
       setRootProperty(SESSION_TABLE_KEY, 0, curTableName);
       connection.commit();
     } finally {
@@ -663,6 +714,7 @@ public class HsqldbJobStorage extends JobStorage {
    * Given a root schema that exists,
    * initialize a version-0 key/value storage schema on top of it,
    * if it does not already exist.
+   * 创建job的数据库
    */
   private void initV0Schema() throws SQLException {
     this.jobTableName = getRootProperty(SESSION_TABLE_KEY, 0);

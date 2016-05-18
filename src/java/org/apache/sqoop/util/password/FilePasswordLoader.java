@@ -34,6 +34,7 @@ import java.io.InputStream;
  * by your Hadoop installation. As the password needs to be stored in the file
  * in a clear text, the password file should have very restrictive permissions
  * (400).
+ * 密码存储在文件中
  */
 public class FilePasswordLoader extends PasswordLoader {
 

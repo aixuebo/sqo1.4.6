@@ -28,6 +28,7 @@ import com.cloudera.sqoop.config.ConfigurationConstants;
 /**
  * Utility class; returns task attempt Id of the current job
  * regardless of Hadoop version being used.
+ * 对当前hadoop的job的一个尝试任务进行处理
  */
 public final class TaskId {
 
@@ -38,6 +39,7 @@ public final class TaskId {
    * @param conf the Configuration to check for the current task attempt id.
    * @param defaultVal the value to return if a task attempt id is not set.
    * @return the current task attempt id, or the default value if one isn't set.
+   * 获取mr的taskId
    */
   public static String get(Configuration conf, String defaultVal) {
     return conf.get("mapreduce.task.id",
@@ -49,6 +51,7 @@ public final class TaskId {
    * perform work.
    * @return a File describing a directory where local temp data for the
    * task attempt can be stored.
+   * 返回在本地磁盘上当前尝试任务可以访问的工作目录
    */
   public static File getLocalWorkPath(Configuration conf) throws IOException {
     String tmpDir = conf.get(

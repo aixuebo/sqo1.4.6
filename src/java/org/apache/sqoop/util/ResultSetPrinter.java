@@ -29,17 +29,19 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * Utility methods to format and print ResultSet objects.
+ * 将结果集打印出来,打印的时候进行了简单的格式化输出
  */
 public class ResultSetPrinter {
 
   public static final Log LOG = LogFactory.getLog(
       ResultSetPrinter.class.getName());
 
-  // max output width to allocate to any column of the printed results.
+  // max output width to allocate to any column of the printed results.最多长度
   private static final int MAX_COL_WIDTH = 20;
 
   /**
    * Print 'str' to the string builder, padded to 'width' chars.
+   * 让字符串打印后,不够width长度的用空格代替
    */
   private static void printPadded(StringBuilder sb, String str, int width) {
     int numPad;
@@ -62,6 +64,7 @@ public class ResultSetPrinter {
   /**
    * Format the contents of the ResultSet into something that could be printed
    * neatly; the results are appended to the supplied StringBuilder.
+   * 对结果集进行打印
    */
   public final void printResultSet(PrintWriter pw, ResultSet results)
       throws IOException {
@@ -72,6 +75,7 @@ public class ResultSetPrinter {
       int [] colWidths = new int[cols];
       ResultSetMetaData metadata = results.getMetaData();
       sbNames.append(LEFT_BORDER);
+        //打印属性集合
       for (int i = 1; i < cols + 1; i++) {
         String colName = metadata.getColumnLabel(i);
         colWidths[i - 1] = Math.min(metadata.getColumnDisplaySize(i),
@@ -84,6 +88,7 @@ public class ResultSetPrinter {
       }
       sbNames.append('\n');
 
+        //打印分隔符
       StringBuilder sbPad = new StringBuilder();
       for (int i = 0; i < cols; i++) {
         for (int j = 0; j < COL_SEPARATOR.length() + colWidths[i]; j++) {
@@ -97,6 +102,7 @@ public class ResultSetPrinter {
       pw.print(sbNames.toString());
       pw.print(sbPad.toString());
 
+        //打印具体的内容
       while (results.next())  {
         StringBuilder sb = new StringBuilder();
         sb.append(LEFT_BORDER);

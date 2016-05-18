@@ -41,6 +41,7 @@ public class AutoHsqldbStorage
   /**
    * Configuration key specifying whether this storage agent is active.
    * Defaults to "on" to allow zero-conf local users.
+   * 默认是true
    */
   public static final String AUTO_STORAGE_IS_ACTIVE_KEY =
       "sqoop.metastore.client.enable.autoconnect";
@@ -48,12 +49,15 @@ public class AutoHsqldbStorage
   /**
    * Configuration key specifying the connect string used by this
    * storage agent.
+   * 配置连接到mysql等连接代理
+   * 例如:jdbc:mysql://<mysql-Server-IP>:<mysql-port>/sqoop?createDatabaseIfNotExist=true
    */
   public static final String AUTO_STORAGE_CONNECT_STRING_KEY =
       "sqoop.metastore.client.autoconnect.url";
 
   /**
    * Configuration key specifying the username to bind with.
+   * 连接数据库的用户名
    */
   public static final String AUTO_STORAGE_USER_KEY =
       "sqoop.metastore.client.autoconnect.username";
@@ -64,6 +68,7 @@ public class AutoHsqldbStorage
 
   /**
    * Configuration key specifying the password to bind with.
+   * 连接数据库的密码
    */
   public static final String AUTO_STORAGE_PASS_KEY =
       "sqoop.metastore.client.autoconnect.password";
@@ -99,6 +104,7 @@ public class AutoHsqldbStorage
   /**
    * Set the connection information to use the auto-inferred connection
    * string.
+   * 设置连接的用户名和密码还有连接地址url
    */
   public void open(Map<String, String> descriptor) throws IOException {
     Configuration conf = getConf();
