@@ -23,6 +23,7 @@ import com.cloudera.sqoop.manager.ImportJobContext;
 
 /**
  * @deprecated Moving to use org.apache.sqoop namespace.
+ * 使用mysql的dump命令进行数据导出
  */
 public class MySQLDumpImportJob
     extends org.apache.sqoop.mapreduce.MySQLDumpImportJob {

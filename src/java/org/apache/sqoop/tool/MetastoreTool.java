@@ -31,6 +31,7 @@ import com.cloudera.sqoop.metastore.hsqldb.HsqldbMetaStore;
 
 /**
  * Tool that runs a standalone Sqoop metastore.
+ * 在任意一个节点开启一个sqoop的metastore服务,其他节点可以访问该服务获取metastore信息
  */
 public class MetastoreTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -67,7 +68,7 @@ public class MetastoreTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     RelatedOptions opts = new RelatedOptions("metastore arguments");
     opts.addOption(OptionBuilder
         .withDescription("Cleanly shut down a running metastore")
-        .withLongOpt(METASTORE_SHUTDOWN_ARG)
+        .withLongOpt(METASTORE_SHUTDOWN_ARG)//关闭sqoop的metastore服务命令
         .create());
 
     toolOptions.addUniqueOptions(opts);

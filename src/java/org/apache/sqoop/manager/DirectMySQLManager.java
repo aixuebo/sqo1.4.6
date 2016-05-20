@@ -31,6 +31,7 @@ import com.cloudera.sqoop.util.ExportException;
 /**
  * Manages direct connections to MySQL databases
  * so we can use mysqldump to get really fast dumps.
+ * 利用mysql的直接导出功能,进行导出数据,这个方式速度更快
  */
 public class DirectMySQLManager
     extends com.cloudera.sqoop.manager.MySQLManager {
@@ -45,13 +46,13 @@ public class DirectMySQLManager
   /**
    * Import the table into HDFS by using mysqldump to pull out the data from
    * the database and upload the files directly to HDFS.
+   * 使用mysqldump命令拉去数据到HDFS上
    */
   @Override
   public void importTable(com.cloudera.sqoop.manager.ImportJobContext context)
       throws IOException, ImportException {
-
-    context.setConnManager(this);
-    if (context.getOptions().getColumns() != null) {
+      context.setConnManager(this);
+    if (context.getOptions().getColumns() != null) {//使用mysqldump命令导入是不支持属性的,因此只能用默认的导出方式,不能使用mysqldump命令了,因此打印了一个提示信息
       LOG.warn("Direct-mode import from MySQL does not support column");
       LOG.warn("selection. Falling back to JDBC-based import.");
       // Don't warn them "This could go faster..."
@@ -60,11 +61,12 @@ public class DirectMySQLManager
       super.importTable(context);
       return;
     }
-
+    //使用mysqldump命令逻辑
     String tableName = context.getTableName();
     String jarFile = context.getJarFile();
     SqoopOptions options = context.getOptions();
 
+    //使用mysql的dump命令进行数据导出
     MySQLDumpImportJob importer = null;
     try {
       importer = new MySQLDumpImportJob(options, context);
@@ -72,17 +74,19 @@ public class DirectMySQLManager
       throw new IOException("Could not load required classes", cnfe);
     }
 
+    //导出的拆分属性
     String splitCol = getSplitColumn(options, tableName);
-    if (null == splitCol && options.getNumMappers() > 1) {
+    if (null == splitCol && options.getNumMappers() > 1) {//如果map数量大于1,又没有拆分属性,则抛异常
       // Can't infer a primary key.
       throw new ImportException("No primary key could be found for table "
           + tableName + ". Please specify one with --split-by or perform "
           + "a sequential import with '-m 1'.");
     }
 
+    //开始执行mysql dump导出
     LOG.info("Beginning mysqldump fast path import");
 
-    if (options.getFileLayout() != SqoopOptions.FileLayout.TextFile) {
+    if (options.getFileLayout() != SqoopOptions.FileLayout.TextFile) {//只支持文本导出,不支持其他可是导出
       // TODO(aaron): Support SequenceFile-based load-in.
       LOG.warn("File import layout " + options.getFileLayout()
           + " is not supported by");
@@ -95,6 +99,7 @@ public class DirectMySQLManager
   /**
    * Export the table from HDFS by using mysqlimport to insert the data
    * back into the database.
+   * 使用mysqlimport方式向数据库写入数据
    */
   @Override
   public void exportTable(com.cloudera.sqoop.manager.ExportJobContext context)

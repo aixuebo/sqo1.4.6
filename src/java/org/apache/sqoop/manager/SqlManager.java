@@ -63,6 +63,36 @@ import com.cloudera.sqoop.util.ResultSetPrinter;
  * ConnManager implementation for generic SQL-compliant database.
  * This is an abstract class; it requires a database-specific
  * ConnManager implementation to actually create the connection.
+ *
+ 1. 获取边界查询的sql:select min(<split-by>), max(<split-by>) from <table name>
+ 2. 移动数据  INSERT INTO toTable ( SELECT * FROM fromTable ) ; DELETE FROM fromTable
+ 3. 删除该表的所有数据 DELETE FROM  tableName
+ 4. 获取该table有多少行数据 SELECT COUNT(*) FROM tableName
+ 5. 获取当前数据库的时间 SELECT CURRENT_TIMESTAMP()
+ 6. 更新数据库的数据信息  JdbcUpdateExportJob exportJob = new JdbcUpdateExportJob(context);
+ 7. 存储过程调用  JdbcCallExportJob exportJob = new JdbcCallExportJob(context);
+ 8. 将HDFS的数据写入到数据库中  JdbcExportJob exportJob = new JdbcExportJob(context);
+ 9.根据sql或者table,把数据分别导入hbase、hbase、Accumulo、HDFS
+ ImportJobBase importer = new HBaseImportJob(opts, context);
+ ImportJobBase importer = new HBaseBulkImportJob(opts, context);
+ ImportJobBase importer = new AccumuloImportJob(opts, context);
+ ImportJobBase importer = new DataDrivenImportJob(opts, context);
+ 如果是根据sql导入的,则要设置查询边界sql或者设置SplitColumn
+ 如果map=1,则必须要设置查询边界
+ 如果设置多个map,必须要有split拆分列
+ 查询边界demo:select min(<split-by>), max(<split-by>) from <table name>
+ 10. 获取一个数据库连接
+ 11. 执行sql,并将结果打印到控制台
+ 12. 执行sql查询数据,返回ResultSet
+ 13.读取一个table的一些属性的信息 select column1,column2 from tableName as tableName,返回ResultSet
+ 14. 提供连接器一个机会去验证import任务是否有效,无效则抛异常 checkTableImportOptions
+ 15. 获取拆分列,默认是按照主键进行拆分,什么列进行map的数据拆分
+ 16. 返回一个表的主键
+ 17. 返回所有table名称集合
+ 18. 返回所有的数据库名称集合
+ 19. 返回一个sql或者表的属性与属性值的映射Map
+ 20. 查询sql或者表中对应的属性集合
+ 21. 返回值是map,key是属性,value是属性的信息,包含属性类型、属性整数保留位数、属性小数保留位数
  */
 public abstract class SqlManager
     extends com.cloudera.sqoop.manager.ConnManager {
@@ -90,6 +120,7 @@ public abstract class SqlManager
   }
 
   /**
+   *
    * Sets default values for values that were not provided by the user.
    * Only options with database-specific defaults should be configured here.
    */
@@ -103,6 +134,7 @@ public abstract class SqlManager
   /**
    * @return the SQL query to use in getColumnNames() in case this logic must
    * be tuned per-database, but the main extraction loop is still inheritable.
+   * 查询该table的所有列的sql,因此条件是where 1=0
    */
   protected String getColNamesQuery(String tableName) {
     // adding where clause to prevent loading a big table
@@ -110,14 +142,16 @@ public abstract class SqlManager
   }
 
   @Override
-  /** {@inheritDoc} */
+  /** {@inheritDoc} 获取该表的所有的属性集合*/
   public String[] getColumnNames(String tableName) {
     String stmt = getColNamesQuery(tableName);
     return getColumnNamesForRawQuery(stmt);
   }
 
   @Override
-  /** {@inheritDoc} */
+  /** {@inheritDoc}
+   * 查询sql中对应的属性集合
+   **/
   public String [] getColumnNamesForQuery(String query) {
     String rawQuery = query.replace(SUBSTITUTE_TOKEN, " (1 = 0) ");
     return getColumnNamesForRawQuery(rawQuery);
@@ -125,6 +159,8 @@ public abstract class SqlManager
 
   /**
    * Get column names for a query statement that we do not modify further.
+   * 查询sql中对应的属性集合
+   * 参数是一个sql
    */
   public String[] getColumnNamesForRawQuery(String stmt) {
     ResultSet results;
@@ -149,6 +185,7 @@ public abstract class SqlManager
             colName = "_RESULT_" + i;
           }
         }
+
         columns.add(colName);
         LOG.debug("Found column " + colName);
       }
@@ -170,6 +207,7 @@ public abstract class SqlManager
     }
   }
 
+    //调用存储过程
   @Override
   public String[] getColumnNamesForProcedure(String procedureName) {
     List<String> ret = new ArrayList<String>();
@@ -216,17 +254,20 @@ public abstract class SqlManager
   /**
    * @return the SQL query to use in getColumnTypes() in case this logic must
    * be tuned per-database, but the main extraction loop is still inheritable.
+   * 查询一个表的每一个属性和对应的类型影射的sql
    */
   protected String getColTypesQuery(String tableName) {
     return getColNamesQuery(tableName);
   }
 
+    //获取一个表的属性与类型的映射
   @Override
   public Map<String, Integer> getColumnTypes(String tableName) {
     String stmt = getColTypesQuery(tableName);
     return getColumnTypesForRawQuery(stmt);
   }
 
+    //获取一个sql的属性与类型的映射
   @Override
   public Map<String, Integer> getColumnTypesForQuery(String query) {
     // Manipulate the query to return immediately, with zero rows.
@@ -236,6 +277,8 @@ public abstract class SqlManager
 
   /**
    * Get column types for a query statement that we do not modify further.
+   *获取一个表的属性与类型的映射
+   * 参数是一个sql
    */
   protected Map<String, Integer> getColumnTypesForRawQuery(String stmt) {
     Map<String, List<Integer>> colInfo = getColumnInfoForRawQuery(stmt);
@@ -263,6 +306,10 @@ public abstract class SqlManager
     return getColumnInfoForRawQuery(rawQuery);
   }
 
+    /**
+     * 返回值是map,key是属性,value是属性的信息,包含属性类型、属性整数保留位数、属性小数保留位数
+     * 参数是sql
+     */
   protected Map<String, List<Integer>> getColumnInfoForRawQuery(String stmt) {
     ResultSet results;
     LOG.debug("Execute getColumnInfoRawQuery : " + stmt);
@@ -282,9 +329,9 @@ public abstract class SqlManager
       int cols = results.getMetaData().getColumnCount();
       ResultSetMetaData metadata = results.getMetaData();
       for (int i = 1; i < cols + 1; i++) {
-        int typeId = metadata.getColumnType(i);
-        int precision = metadata.getPrecision(i);
-        int scale = metadata.getScale(i);
+        int typeId = metadata.getColumnType(i);//获取属性类型
+        int precision = metadata.getPrecision(i);//属性的整数位
+        int scale = metadata.getScale(i);//属性的小数点
 
         // If we have an unsigned int we need to make extra room by
         // plopping it into a bigint
@@ -381,10 +428,14 @@ public abstract class SqlManager
     }
   }
 
+    /**
+     * 读取一个table的一些属性的信息
+     * select column1,column2 from tableName as tableName,返回ResultSet
+     */
   @Override
   public ResultSet readTable(String tableName, String[] columns)
       throws SQLException {
-    if (columns == null) {
+    if (columns == null) {//获取该table的所有属性
       columns = getColumnNames(tableName);
     }
 
@@ -415,6 +466,7 @@ public abstract class SqlManager
     return null;
   }
 
+    //执行存储过程,返回每一个属性和对应类型的映射
   @Override
   public Map<String, Integer> getColumnTypesForProcedure(String procedureName) {
     Map<String, List<Integer>> colInfo =
@@ -511,6 +563,7 @@ public abstract class SqlManager
     }
   }
 
+    //返回所有table名称集合
   @Override
   public String[] listTables() {
     ResultSet results = null;
@@ -555,6 +608,7 @@ public abstract class SqlManager
     }
   }
 
+    //返回一个表的主键
   @Override
   public String getPrimaryKey(String tableName) {
     try {
@@ -592,6 +646,7 @@ public abstract class SqlManager
    * @param tableName the table to import.
    * @return the splitting column, if one is set or inferrable, or null
    * otherwise.
+   * 获取拆分列,默认是按照主键进行拆分,什么列进行map的数据拆分
    */
   protected String getSplitColumn(SqoopOptions opts, String tableName) {
     String splitCol = opts.getSplitByCol();
@@ -607,23 +662,24 @@ public abstract class SqlManager
    * Offers the ConnManager an opportunity to validate that the
    * options specified in the ImportJobContext are valid.
    * @throws ImportException if the import is misconfigured.
+   * 提供连接器一个机会去验证import任务是否有效,无效则抛异常
    */
   protected void checkTableImportOptions(
           com.cloudera.sqoop.manager.ImportJobContext context)
       throws IOException, ImportException {
-    String tableName = context.getTableName();
+    String tableName = context.getTableName();//对该tabke进行import
     SqoopOptions opts = context.getOptions();
 
     // Default implementation: check that the split column is set
     // correctly.
-    String splitCol = getSplitColumn(opts, tableName);
-    if (null == splitCol && opts.getNumMappers() > 1) {
-      if (!opts.getAutoResetToOneMapper()) {
-        // Can't infer a primary key.
+    String splitCol = getSplitColumn(opts, tableName);//获取该table的拆分列,什么列进行map的数据拆分
+    if (null == splitCol && opts.getNumMappers() > 1) {//有多个map去执行,但是却没有拆分列
+      if (!opts.getAutoResetToOneMapper()) {//不允许将map数量设置为1个,则抛异常
+        // Can't infer a primary key.不能推断出一个主键
         throw new ImportException("No primary key could be found for table "
           + tableName + ". Please specify one with --split-by or perform "
           + "a sequential import with '-m 1'.");
-      } else {
+      } else {//将map数量设置为1个
         LOG.warn("Split by column not provided or can't be inferred.  Resetting to one mapper");
         opts.setNumMappers(1);
       }
@@ -633,6 +689,7 @@ public abstract class SqlManager
   /**
    * Default implementation of importTable() is to launch a MapReduce job
    * via DataDrivenImportJob to read the table with DataDrivenDBInputFormat.
+   *
    */
   public void importTable(com.cloudera.sqoop.manager.ImportJobContext context)
       throws IOException, ImportException {
@@ -710,15 +767,16 @@ public abstract class SqlManager
           context);
     }
 
+    //如果是根据sql导入的,则要设置查询边界sql或者设置SplitColumn
     String splitCol = getSplitColumn(opts, null);
     if (splitCol == null) {
-      String boundaryQuery = opts.getBoundaryQuery();
-      if (opts.getNumMappers() > 1) {
+      String boundaryQuery = opts.getBoundaryQuery();//查询边界
+      if (opts.getNumMappers() > 1) {//如果设置多个map,必须要有split拆分列
         // Can't infer a primary key.
         throw new ImportException("A split-by column must be specified for "
             + "parallel free-form query imports. Please specify one with "
             + "--split-by or perform a sequential import with '-m 1'.");
-      } else if (boundaryQuery != null && !boundaryQuery.isEmpty()) {
+      } else if (boundaryQuery != null && !boundaryQuery.isEmpty()) {//如果map=1,则必须要设置查询边界
         // Query import with boundary query and no split column specified
         throw new ImportException("Using a boundary query for a query based "
             + "import requires specifying the split by column as well. Please "
@@ -731,9 +789,11 @@ public abstract class SqlManager
 
   /**
    * Executes an arbitrary SQL statement.
-   * @param stmt The SQL statement to execute
+   * @param stmt The SQL statement to execute 预编译的sql语句
    * @param fetchSize Overrides default or parameterized fetch size
+   * @param args 是预编译的sql的值
    * @return A ResultSet encapsulating the results or null on error
+   * 执行sql
    */
   protected ResultSet execute(String stmt, Integer fetchSize, Object... args)
       throws SQLException {
@@ -762,6 +822,7 @@ public abstract class SqlManager
    * Executes an arbitrary SQL Statement.
    * @param stmt The SQL statement to execute
    * @return A ResultSet encapsulating the results or null on error
+   * 执行sql查询数据
    */
   protected ResultSet execute(String stmt, Object... args) throws SQLException {
     return execute(stmt, options.getFetchSize(), args);
@@ -781,16 +842,16 @@ public abstract class SqlManager
     try {
       try {
         int cols = results.getMetaData().getColumnCount();
-        pw.println("Got " + cols + " columns back");
+        pw.println("Got " + cols + " columns back");//打印多少列被返回
         if (cols > 0) {
           ResultSetMetaData rsmd = results.getMetaData();
           String schema = rsmd.getSchemaName(1);
           String table = rsmd.getTableName(1);
-          if (null != schema) {
+          if (null != schema) {//打印schema
             pw.println("Schema: " + schema);
           }
 
-          if (null != table) {
+          if (null != table) {//打印table
             pw.println("Table: " + table);
           }
         }
@@ -821,6 +882,7 @@ public abstract class SqlManager
   /**
    * Poor man's SQL query interface; used for debugging.
    * @param s the SQL statement to execute.
+   * 执行sql,并将结果打印到控制台
    */
   public void execAndPrint(String s) {
     ResultSet results = null;
@@ -844,6 +906,7 @@ public abstract class SqlManager
    * Create a connection to the database; usually used only from within
    * getConnection(), which enforces a singleton guarantee around the
    * Connection object.
+   * 获取一个数据库连接
    */
   protected Connection makeConnection() throws SQLException {
 
@@ -860,7 +923,7 @@ public abstract class SqlManager
     String username = options.getUsername();
     String password = options.getPassword();
     String connectString = options.getConnectString();
-    Properties connectionParams = options.getConnectionParams();
+    Properties connectionParams = options.getConnectionParams();//连接串中的参数
     if (connectionParams != null && connectionParams.size() > 0) {
       LOG.debug("User specified connection params. "
               + "Using properties specific API for making connection.");
@@ -897,6 +960,7 @@ public abstract class SqlManager
   /**
    * @return the transaction isolation level to use for metadata queries
    * (queries executed by the ConnManager itself).
+   * 获取事物隔离级别
    */
   protected int getMetadataIsolationLevel() {
     return Connection.TRANSACTION_READ_COMMITTED;
@@ -904,14 +968,16 @@ public abstract class SqlManager
 
   /**
    * Export data stored in HDFS into a table in a database.
+   * 将HDFS的数据写入到数据库中
    */
   public void exportTable(com.cloudera.sqoop.manager.ExportJobContext context)
       throws IOException, ExportException {
-    context.setConnManager(this);
+    context.setConnManager(this);//为上下文设置数据库连接,然后开始执行mr任务
     JdbcExportJob exportJob = new JdbcExportJob(context);
     exportJob.runExport();
   }
 
+  //存储过程调用
   @Override
   public void callTable(com.cloudera.sqoop.manager.ExportJobContext context)
       throws IOException,
@@ -948,6 +1014,7 @@ public abstract class SqlManager
 
   /**
    * @return a SQL query to retrieve the current timestamp from the db.
+   * 获取当前数据库的时间戳sql
    */
   protected String getCurTimestampQuery() {
     return "SELECT CURRENT_TIMESTAMP()";
@@ -956,6 +1023,7 @@ public abstract class SqlManager
   @Override
   /**
    * {@inheritDoc}
+   * 获取当前数据库的时间
    */
   public Timestamp getCurrentDbTimestamp() {
     release(); // Release any previous ResultSet.
@@ -996,6 +1064,10 @@ public abstract class SqlManager
     }
   }
 
+    /**
+     * 获取该table有多少行数据
+     * SELECT COUNT(*) FROM tableName
+     */
   @Override
   public long getTableRowCount(String tableName) throws SQLException {
     release(); // Release any previous ResultSet
@@ -1036,6 +1108,10 @@ public abstract class SqlManager
     return result;
   }
 
+    /**
+     * 删除该表的所有数据
+     * DELETE FROM  tableName
+     */
   @Override
   public void deleteAllRecords(String tableName) throws SQLException {
     release(); // Release any previous ResultSet
@@ -1066,6 +1142,11 @@ public abstract class SqlManager
     }
   }
 
+    /**
+     * 移动数据
+     * INSERT INTO toTable ( SELECT * FROM fromTable )
+     * DELETE FROM fromTable
+     */
   @Override
   public void migrateData(String fromTable, String toTable)
     throws SQLException {
@@ -1113,6 +1194,7 @@ public abstract class SqlManager
     }
   }
 
+  //获取边界查询的sql
   public String getInputBoundsQuery(String splitByCol, String sanitizedQuery) {
     return options.getBoundaryQuery();
   }

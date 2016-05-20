@@ -40,19 +40,19 @@ public abstract class BaseSqoopTool
   public static final String PASSWORD_PROMPT_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.PASSWORD_PROMPT_ARG;
   public static final String DIRECT_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.DIRECT_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.DIRECT_ARG;//是否使用类似mysql的快速直接导入功能
   public static final String BATCH_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.BATCH_ARG;
   public static final String TABLE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.TABLE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.TABLE_ARG;//导入什么表
   public static final String STAGING_TABLE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.STAGING_TABLE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.STAGING_TABLE_ARG;//export的时候,可以设置一个中间媒介表
   public static final String CLEAR_STAGING_TABLE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.CLEAR_STAGING_TABLE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.CLEAR_STAGING_TABLE_ARG;//export的时候,可以设置一个中间媒介表,将中间表内容删除
   public static final String COLUMNS_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.COLUMNS_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.COLUMNS_ARG;//导入该表的哪些列
   public static final String SPLIT_BY_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.SPLIT_BY_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.SPLIT_BY_ARG;//按照什么列进行拆分map任务,默认是按照主键拆分
   public static final String WHERE_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.WHERE_ARG;
   public static final String HADOOP_HOME_ARG =
@@ -60,11 +60,11 @@ public abstract class BaseSqoopTool
   public static final String HIVE_HOME_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.HIVE_HOME_ARG;
   public static final String WAREHOUSE_DIR_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.WAREHOUSE_DIR_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.WAREHOUSE_DIR_ARG;//导入HDFS哪个父目录下
   public static final String TARGET_DIR_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.TARGET_DIR_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.TARGET_DIR_ARG;//存储在hdfs上哪里
   public static final String APPEND_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.APPEND_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.APPEND_ARG;//增量导入的追加模式
   public static final String NULL_STRING =
           org.apache.sqoop.tool.BaseSqoopTool.NULL_STRING;
   public static final String INPUT_NULL_STRING =
@@ -100,23 +100,25 @@ public abstract class BaseSqoopTool
   public static final String CREATE_HIVE_TABLE_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.CREATE_HIVE_TABLE_ARG;
   public static final String NUM_MAPPERS_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.NUM_MAPPERS_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.NUM_MAPPERS_ARG;//多少个map任务去执行该job
   public static final String NUM_MAPPERS_SHORT_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.NUM_MAPPERS_SHORT_ARG;
-  public static final String COMPRESS_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.COMPRESS_ARG;
-  public static final String COMPRESSION_CODEC_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.COMPRESSION_CODEC_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.NUM_MAPPERS_SHORT_ARG;//多少个map任务去执行该job
+
+    public static final String COMPRESS_ARG =
+          org.apache.sqoop.tool.BaseSqoopTool.COMPRESS_ARG;//是否支持压缩
   public static final String COMPRESS_SHORT_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.COMPRESS_SHORT_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.COMPRESS_SHORT_ARG;//是否支持压缩
+  public static final String COMPRESSION_CODEC_ARG =
+            org.apache.sqoop.tool.BaseSqoopTool.COMPRESSION_CODEC_ARG;//压缩方式
+
   public static final String DIRECT_SPLIT_SIZE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.DIRECT_SPLIT_SIZE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.DIRECT_SPLIT_SIZE_ARG;//当direct模式进行导入的时候,每多少个字节进行拆分一次,单位是字节
   public static final String INLINE_LOB_LIMIT_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.INLINE_LOB_LIMIT_ARG;
   public static final String FETCH_SIZE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.FETCH_SIZE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.FETCH_SIZE_ARG;//设置 statement.setFetchSize(fetchSize);
   public static final String EXPORT_PATH_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.EXPORT_PATH_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.EXPORT_PATH_ARG;//export的时候hdfs上的输入源目录
   public static final String FIELDS_TERMINATED_BY_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.FIELDS_TERMINATED_BY_ARG;
   public static final String LINES_TERMINATED_BY_ARG =
@@ -146,29 +148,34 @@ public abstract class BaseSqoopTool
   public static final String PACKAGE_NAME_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.PACKAGE_NAME_ARG;
   public static final String CLASS_NAME_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.CLASS_NAME_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.CLASS_NAME_ARG;//指定jar包中要加载的主类
   public static final String JAR_FILE_NAME_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.JAR_FILE_NAME_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.JAR_FILE_NAME_ARG;//指定特殊的jar包文件
+
   public static final String SQL_QUERY_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.SQL_QUERY_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.SQL_QUERY_ARG;//导入的sql
   public static final String SQL_QUERY_BOUNDARY =
-          org.apache.sqoop.tool.BaseSqoopTool.SQL_QUERY_BOUNDARY;
+          org.apache.sqoop.tool.BaseSqoopTool.SQL_QUERY_BOUNDARY;//如果是根据sql导入的,则要设置查询边界sql或者设置SplitColumn,如果map=1,则必须要设置查询边界,如果设置多个map,必须要有split拆分列, 查询边界demo:select min(<split-by>), max(<split-by>) from <table name>
   public static final String SQL_QUERY_SHORT_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.SQL_QUERY_SHORT_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.SQL_QUERY_SHORT_ARG;//导入的sql缩写命令
   public static final String VERBOSE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.VERBOSE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.VERBOSE_ARG;//打印更多日志信息
   public static final String HELP_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.HELP_ARG;
   public static final String UPDATE_KEY_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.UPDATE_KEY_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.UPDATE_KEY_ARG;//在export的时候 使用哪个字段进行update操作
   public static final String UPDATE_MODE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.UPDATE_MODE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.UPDATE_MODE_ARG;//export的时候,更新形式,仅仅更新存在的行,或者更新存在的行,insert不存在的行,updateonly或者allowinsert
+
+
   public static final String INCREMENT_TYPE_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_TYPE_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_TYPE_ARG;//append' or 'lastmodified 增量导入类型
   public static final String INCREMENT_COL_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_COL_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_COL_ARG;//在什么属性上进行增量处理
   public static final String INCREMENT_LAST_VAL_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_LAST_VAL_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_LAST_VAL_ARG;//记录增量最后一个值
+
+
   public static final String HBASE_TABLE_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.HBASE_TABLE_ARG;
   public static final String HBASE_COL_FAM_ARG =
@@ -189,14 +196,17 @@ public abstract class BaseSqoopTool
           org.apache.sqoop.tool.BaseSqoopTool.JOB_CMD_LIST_ARG;
   public static final String JOB_CMD_SHOW_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.JOB_CMD_SHOW_ARG;
+
+
   public static final String METASTORE_SHUTDOWN_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.METASTORE_SHUTDOWN_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.METASTORE_SHUTDOWN_ARG;//关闭sqoop的metastore服务命令
+
   public static final String NEW_DATASET_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.NEW_DATASET_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.NEW_DATASET_ARG;//新数据所在的目录
   public static final String OLD_DATASET_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.OLD_DATASET_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.OLD_DATASET_ARG;//老数据所在的目录
   public static final String MERGE_KEY_ARG =
-          org.apache.sqoop.tool.BaseSqoopTool.MERGE_KEY_ARG;
+          org.apache.sqoop.tool.BaseSqoopTool.MERGE_KEY_ARG;//根据哪个属性进行合并
 
   public BaseSqoopTool() {
   }

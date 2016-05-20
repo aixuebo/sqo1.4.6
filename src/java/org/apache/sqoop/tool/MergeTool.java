@@ -35,6 +35,7 @@ import org.apache.sqoop.util.LoggingUtils;
 
 /**
  * Tool that merges a more recent dataset on top of an older one.
+ * 将最新的数据集合与老的数据集合进行合并,相同id的记录,保留最新的数据记录即可
  */
 public class MergeTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -83,39 +84,39 @@ public class MergeTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     mergeOpts.addOption(OptionBuilder.withArgName("file")
         .hasArg().withDescription("Load class from specified jar file")
-        .withLongOpt(JAR_FILE_NAME_ARG)
+        .withLongOpt(JAR_FILE_NAME_ARG)//指定特殊的jar包文件
         .create());
 
     mergeOpts.addOption(OptionBuilder.withArgName("name")
         .hasArg().withDescription("Specify record class name to load")
-        .withLongOpt(CLASS_NAME_ARG)
+        .withLongOpt(CLASS_NAME_ARG)//指定jar包中要加载的主类
         .create());
 
     mergeOpts.addOption(OptionBuilder.withArgName("path")
         .hasArg().withDescription("Path to the more recent data set")
-        .withLongOpt(NEW_DATASET_ARG)
+        .withLongOpt(NEW_DATASET_ARG)//新数据所在的目录
         .create());
 
     mergeOpts.addOption(OptionBuilder.withArgName("path")
         .hasArg().withDescription("Path to the older data set")
-        .withLongOpt(OLD_DATASET_ARG)
+        .withLongOpt(OLD_DATASET_ARG)//老数据所在的目录
         .create());
 
     mergeOpts.addOption(OptionBuilder.withArgName("path")
         .hasArg().withDescription("Destination path for merged results")
-        .withLongOpt(TARGET_DIR_ARG)
+        .withLongOpt(TARGET_DIR_ARG)//合并后的最终结果输出目录
         .create());
 
     mergeOpts.addOption(OptionBuilder.withArgName("column")
         .hasArg().withDescription("Key column to use to join results")
-        .withLongOpt(MERGE_KEY_ARG)
+        .withLongOpt(MERGE_KEY_ARG)//根据哪个属性进行合并
         .create());
 
     // Since the "common" options aren't used in the merge tool,
     // add these settings here.
     mergeOpts.addOption(OptionBuilder
         .withDescription("Print more information while working")
-        .withLongOpt(VERBOSE_ARG)
+        .withLongOpt(VERBOSE_ARG)//打印更多日志信息
         .create());
     mergeOpts.addOption(OptionBuilder
         .withDescription("Print usage instructions")
@@ -127,7 +128,9 @@ public class MergeTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
 
   @Override
-  /** Configure the command-line arguments we expect to receive */
+  /** Configure the command-line arguments we expect to receive
+   * 合并的配置信息
+   **/
   public void configureOptions(ToolOptions toolOptions) {
     toolOptions.addUniqueOptions(getMergeOptions());
   }

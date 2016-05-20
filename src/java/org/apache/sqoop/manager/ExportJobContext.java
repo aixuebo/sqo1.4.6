@@ -26,13 +26,15 @@ import com.cloudera.sqoop.SqoopOptions;
 /**
  * A set of parameters describing an export operation; this is passed to
  * ConnManager.exportTable() as its argument.
+ *
+ * export导出到数据库的任务上下文
  */
 public class ExportJobContext {
 
-  private String tableName;
-  private String jarFile;
+  private String tableName;//导出到哪个表中
+  private String jarFile;//执行的jar包
   private SqoopOptions options;
-  private ConnManager manager;
+  private ConnManager manager;//数据库连接器
 
   public ExportJobContext(final String table, final String jar,
       final SqoopOptions opts) {

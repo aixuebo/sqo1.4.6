@@ -58,6 +58,8 @@ import com.cloudera.sqoop.mapreduce.db.DBInputFormat.DBInputSplit;
  * Operates like DBInputFormat, but instead of using LIMIT and OFFSET to
  * demarcate splits, it tries to generate WHERE clauses which separate the
  * data into roughly equivalent shards.
+ * 默认的数据库导出的输入源格式对象
+ *
  */
 public class DataDrivenDBInputFormat<T extends DBWritable>
       extends DBInputFormat<T> implements Configurable  {
@@ -75,6 +77,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
   /**
    * @return the DBSplitter implementation to use to divide the table/query
    * into InputSplits.
+   *
    */
   protected DBSplitter getSplitter(int sqlDataType) {
     switch (sqlDataType) {

@@ -37,12 +37,15 @@ import com.cloudera.sqoop.util.ImportException;
 
 /**
  * Tool that performs database imports of all tables in a database to HDFS.
+ * 导出一个数据库的全部表到HDFS上
+ * 其实就是一个table,一个table的调用ImportTool方法即可,只是可以设置一个排他table集合,用逗号拆分而已
  */
 public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
 
   public static final Log LOG = LogFactory.getLog(
       ImportAllTablesTool.class.getName());
 
+  //命令是import-all-tables
   public ImportAllTablesTool() {
     super("import-all-tables", true);
   }
@@ -56,7 +59,7 @@ public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
 
     importOpts.addOption(OptionBuilder.withArgName("tables")
         .hasArg().withDescription("Tables to exclude when importing all tables")
-        .withLongOpt(ALL_TABLE_EXCLUDES_ARG)
+        .withLongOpt(ALL_TABLE_EXCLUDES_ARG)//将一个数据库所有表都导入的时候,要排除一些表的时候使用该字段,table用逗号拆分
         .create());
 
     return importOpts;
@@ -88,26 +91,26 @@ public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
         hiveImport = new HiveImport(options, manager, options.getConf(), false);
       }
 
-      if (options.getAllTablesExclude() != null) {
+      if (options.getAllTablesExclude() != null) {//解析要排除的table集合
         excludes.addAll(Arrays.asList(options.getAllTablesExclude().split(",")));
       }
 
-      String [] tables = manager.listTables();
+      String [] tables = manager.listTables();//获取该数据库的所有table
       if (null == tables) {
         System.err.println("Could not retrieve tables list from server");
         LOG.error("manager.listTables() returned null");
         return 1;
       } else {
-        int numMappers = options.getNumMappers();
+        int numMappers = options.getNumMappers();//mapper数量
         for (String tableName : tables) {
-          if (excludes.contains(tableName)) {
+          if (excludes.contains(tableName)) {//跳过该表,不进行导入
             System.out.println("Skipping table: " + tableName);
           } else {
             /*
              * Number of mappers could be potentially reset in imports.  So
              * we set it to the configured number before each import.
              */
-            options.setNumMappers(numMappers);
+            options.setNumMappers(numMappers);//对表进行导入
             importTable(options, tableName, hiveImport);
           }
         }
@@ -135,4 +138,5 @@ public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
   }
 
 }
+
 

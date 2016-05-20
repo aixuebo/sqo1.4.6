@@ -29,15 +29,16 @@ import org.apache.sqoop.util.Jars;
 /**
  * A set of parameters describing an import operation; this is passed to
  * ConnManager.importTable() as its argument.
+ * 一个导入任务的上下文
  */
 public class ImportJobContext {
 
-  private String tableName;
-  private String jarFile;
+  private String tableName;//要导入的表名字
+  private String jarFile;//要执行的jar包
   private SqoopOptions options;
   private Class<? extends InputFormat> inputFormatClass;
-  private Path destination;
-  private ConnManager manager;
+  private Path destination;//导出的输出路径
+  private ConnManager manager;//数据库连接对象
 
   public ImportJobContext(final String table, final String jar,
       final SqoopOptions opts, final Path destination) {

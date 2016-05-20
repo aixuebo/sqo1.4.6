@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * Defines conversion between SQL types and Hive types.
+ * 定义sql和hive的类型转换关系
  */
 public final class HiveTypes {
 
@@ -35,6 +36,7 @@ public final class HiveTypes {
   /**
    * Given JDBC SQL types coming from another database, what is the best
    * mapping to a Hive-specific type?
+   * 参数是sql的类型,返回值是hive的类型
    */
   public static String toHiveType(int sqlType) {
 
@@ -76,6 +78,7 @@ public final class HiveTypes {
   /**
    * @return true if a sql type can't be translated to a precise match
    * in Hive, and we have to cast it to something more generic.
+   * true表示sql的类型不能被转换成一个精准的hive类型,我们需要强转成一些更可靠的类型
    */
   public static boolean isHiveTypeImprovised(int sqlType) {
     return sqlType == Types.DATE || sqlType == Types.TIME

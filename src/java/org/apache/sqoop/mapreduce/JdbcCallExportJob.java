@@ -36,6 +36,7 @@ import com.google.common.base.Strings;
 /**
  * Run an export using JDBC (JDBC-based ExportCallOutputFormat) to
  * call the stored procedure.
+ * 应该是JDBC的存储过程调用任务
  */
 public class JdbcCallExportJob extends JdbcExportJob {
   public static final String SQOOP_EXPORT_CALL_KEY = "sqoop.export.call";

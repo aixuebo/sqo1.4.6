@@ -67,10 +67,11 @@ public class SqoopOptions
    * <li>UpdateOnly: This is the default. New rows are silently ignored.</li>
    * <li>AllowInsert: New rows are inserted into the database.</li>
    * </ul>
+   * 更新模式
    */
   public enum UpdateMode {
-    UpdateOnly,
-    AllowInsert
+    UpdateOnly,//仅仅更新存在的行,对于数据库中不存在的行,则进行跳过,不能insert操作
+    AllowInsert//对存在的行进行update操作,不存在的行进行insert操作
   }
 
   public SqoopOptions() {

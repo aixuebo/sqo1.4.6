@@ -213,6 +213,9 @@ public class JobBase {
     conf.set("tmpjars", sb.toString());
   }
 
+    /**
+     * 将file文件路径加入到localUrls集合中
+     */
   private void addToCache(String file, FileSystem fs, Set<String> localUrls) {
     if (null == file) {
       return;
@@ -227,6 +230,7 @@ public class JobBase {
   /**
    * Add the .jar elements of a directory to the DCache classpath,
    * nonrecursively.
+   * 将dir目录下所有的jar都存储到localUrls集合中
    */
   private void addDirToCache(File dir, FileSystem fs, Set<String> localUrls) {
     if (null == dir) {
@@ -271,6 +275,7 @@ public class JobBase {
 
   /**
    * Configure the inputformat to use for the job.
+   * 为job分配inputFormat
    */
   protected void configureInputFormat(Job job, String tableName,
       String tableClassName, String splitByCol)
@@ -283,6 +288,7 @@ public class JobBase {
 
   /**
    * Configure the output format to use for the job.
+   * 为job设置outputFormat
    */
   protected void configureOutputFormat(Job job, String tableName,
       String tableClassName) throws ClassNotFoundException, IOException {
@@ -294,6 +300,7 @@ public class JobBase {
   /**
    * Set the mapper class implementation to use in the job,
    * as well as any related configuration (e.g., map output types).
+   * 为job设置mapclass
    */
   protected void configureMapper(Job job, String tableName,
       String tableClassName) throws ClassNotFoundException, IOException {
@@ -312,6 +319,7 @@ public class JobBase {
 
   /**
    * Configure the number of map tasks to use in the job.
+   * 配置map的数量
    */
   protected int configureNumMapTasks(Job job) throws IOException {
     int numMapTasks = options.getNumMappers();
@@ -325,6 +333,7 @@ public class JobBase {
 
   /**
    * Configure the number of reduce tasks to use in the job.
+   * 配置redue的数量
    */
   protected int configureNumReduceTasks(Job job) throws IOException {
     job.setNumReduceTasks(0);
@@ -349,6 +358,7 @@ public class JobBase {
    *
    * @param configuration Hadoop configuration that should be used
    * @return New job object, created object won't be persisted in the instance
+   * 创建一个hadoop的job对象
    */
   public Job createJob(Configuration configuration) throws IOException {
     // Put the SqoopOptions into job if requested
@@ -365,6 +375,7 @@ public class JobBase {
    *
    * @param opts SqoopOptions that should be serialized
    * @param configuration Target configuration object
+   * 将sqoop的配置信息存储到conf中
    */
   public void putSqoopOptionsToConfiguration(SqoopOptions opts, Configuration configuration) {
     for(Map.Entry<Object, Object> e : opts.writeProperties().entrySet()) {

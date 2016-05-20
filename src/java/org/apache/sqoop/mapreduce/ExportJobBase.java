@@ -54,11 +54,14 @@ import org.apache.sqoop.validation.*;
 
 /**
  * Base class for running an export MapReduce job.
+ * export导入数据到数据库的job
  */
 public class ExportJobBase extends JobBase {
 
   /**
+   *
    * The (inferred) type of a file or group of files.
+   * 文件类型
    */
   public enum FileType {
     SEQUENCE_FILE, AVRO_DATA_FILE, HCATALOG_MANAGED_FILE, PARQUET_FILE, UNKNOWN
@@ -72,6 +75,7 @@ public class ExportJobBase extends JobBase {
       "sqoop.mapreduce.export.table.class";
 
   /**
+   *
    * What column of the table to use for the WHERE clause of
    * an updating export.
    */
@@ -112,6 +116,7 @@ public class ExportJobBase extends JobBase {
   /**
    * @return true if p is a SequenceFile, or a directory containing
    * SequenceFiles.
+   * 是否是序列化类型
    */
   public static boolean isSequenceFiles(Configuration conf, Path p)
       throws IOException {
@@ -121,13 +126,14 @@ public class ExportJobBase extends JobBase {
   /**
    * @return the type of the file represented by p (or the files in p, if a
    * directory)
+   * 获取文件类型
    */
   public static FileType getFileType(Configuration conf, Path p)
       throws IOException {
     FileSystem fs = p.getFileSystem(conf);
 
     try {
-      FileStatus stat = fs.getFileStatus(p);
+      FileStatus stat = fs.getFileStatus(p);//第一个不是目录,也不是以_开头的文件
 
       if (null == stat) {
         // Couldn't get the item.
@@ -135,7 +141,7 @@ public class ExportJobBase extends JobBase {
         return FileType.UNKNOWN;
       }
 
-      if (stat.isDir()) {
+      if (stat.isDir()) {//该路径是目录
         FileStatus [] subitems = fs.listStatus(p);
         if (subitems == null || subitems.length == 0) {
           LOG.warn("Input path " + p + " contains no files");
@@ -146,7 +152,7 @@ public class ExportJobBase extends JobBase {
         boolean foundChild = false;
         for (int i = 0; i < subitems.length; i++) {
           stat = subitems[i];
-          if (!stat.isDir() && !stat.getPath().getName().startsWith("_")) {
+          if (!stat.isDir() && !stat.getPath().getName().startsWith("_")) {//不是目录,也不是以_开头的文件
             foundChild = true;
             break; // This item is a visible file. Check it.
           }
@@ -174,6 +180,7 @@ public class ExportJobBase extends JobBase {
   /**
    * @param file a file to test.
    * @return true if 'file' refers to a SequenceFile.
+   * 读取前三个字节,判断文件类型
    */
   private static FileType fromMagicNumber(Path file, Configuration conf) {
     // Test target's header to see if it contains magic numbers indicating its
@@ -213,12 +220,13 @@ public class ExportJobBase extends JobBase {
 
   /**
    * @return the Path to the files we are going to export to the db.
+   * 获取数据源路径
    */
   protected Path getInputPath() throws IOException {
     if (isHCatJob) {
       return null;
     }
-    Path inputPath = new Path(context.getOptions().getExportDir());
+    Path inputPath = new Path(context.getOptions().getExportDir());//输入数据源目录
     Configuration conf = options.getConf();
     inputPath = inputPath.makeQualified(FileSystem.get(conf));
     return inputPath;

@@ -28,6 +28,7 @@ import com.cloudera.sqoop.cli.ToolOptions;
 
 /**
  * Tool that lists available tables in a database.
+ * 获取数据库中所有的table集合
  */
 public class ListTablesTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -80,8 +81,8 @@ public class ListTablesTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   /** {@inheritDoc} */
   public void validateOptions(SqoopOptions options)
       throws InvalidOptionsException {
-    options.setExtraArgs(getSubcommandArgs(extraArguments));
-    int dashPos = getDashPosition(extraArguments);
+    options.setExtraArgs(getSubcommandArgs(extraArguments));//查找"--"之后所有的数组内容
+    int dashPos = getDashPosition(extraArguments);//查找数组中"--"的位置
     if (hasUnrecognizedArgs(extraArguments, 0, dashPos)) {
       throw new InvalidOptionsException(HELP_STR);
     }

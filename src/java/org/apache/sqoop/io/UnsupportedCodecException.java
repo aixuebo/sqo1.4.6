@@ -21,6 +21,7 @@ import java.io.IOException;
 
 /**
  * Thrown when a compression codec cannot be recognized.
+ * 当压缩方式不被认可的时候,抛异常
  */
 public class UnsupportedCodecException extends IOException {
 

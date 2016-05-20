@@ -106,7 +106,7 @@ public class IntegerSplitter implements DBSplitter  {
      * All splits are open on the top end, except the last one.
      *
      * So the list [0, 5, 8, 12, 18] would represent splits capturing the
-     * intervals:
+     * intervals:间隔
      *
      * [0, 5)
      * [5, 8)
@@ -123,8 +123,8 @@ public class IntegerSplitter implements DBSplitter  {
       // splitSize + minVal will always be <= maxVal.  We then use the remainder
       // and add 1 if the current split index is less than the < the remainder.
       // This is guaranteed to add up to remainder and not surpass the value.
-      long splitSize = (maxVal - minVal) / numSplits;
-      long remainder = (maxVal - minVal) % numSplits;
+      long splitSize = (maxVal - minVal) / numSplits;//计算每一个map执行的区间
+      long remainder = (maxVal - minVal) % numSplits;//计算余数
       long curVal = minVal;
 
       // This will honor numSplits as long as split size > 0.  If split size is
@@ -160,7 +160,7 @@ public class IntegerSplitter implements DBSplitter  {
         //  * 5 <= x <= 5
         splits.add(maxVal);
       }
-
+//
       return splits;
     }
 }

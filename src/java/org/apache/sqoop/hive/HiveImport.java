@@ -58,10 +58,10 @@ public class HiveImport {
   public static final Log LOG = LogFactory.getLog(HiveImport.class.getName());
 
   private SqoopOptions options;
-  private ConnManager connManager;
+  private ConnManager connManager;//数据库连接器,目的是获取table数据源的描述信息
   private Configuration configuration;
-  private boolean generateOnly;
-  private static boolean testMode = false;
+  private boolean generateOnly;//true 表示设置了 --generate-only,则表示仅仅生成hive的DDL,并不会真正的运行他,因此不会有任何数据的流动
+  private static boolean testMode = false;//是否是测试模式
 
   public static boolean getTestMode() {
     return testMode;
@@ -71,7 +71,9 @@ public class HiveImport {
     testMode = mode;
   }
 
-  /** Entry point through which Hive invocation should be attempted. */
+  /** Entry point through which Hive invocation should be attempted.
+   *  确保有hive的jar包
+   **/
   private static final String HIVE_MAIN_CLASS =
       "org.apache.hadoop.hive.cli.CliDriver";
 
@@ -86,6 +88,7 @@ public class HiveImport {
 
   /**
    * @return the filename of the hive executable to run to do the import
+   * 获取hive的bin路径
    */
   private String getHiveBinPath() {
     // If the user has $HIVE_HOME set, then use $HIVE_HOME/bin/hive if it
@@ -112,6 +115,7 @@ public class HiveImport {
   /**
    * If we used a MapReduce-based upload of the data, remove the _logs dir
    * from where we put it, before running Hive LOAD DATA INPATH.
+   * 为table创建临时目录,并且清空该目录内容 ,并且移除该临时目录
    */
   private void removeTempLogs(Path tablePath) throws IOException {
     FileSystem fs = FileSystem.get(configuration);
@@ -129,6 +133,7 @@ public class HiveImport {
    * @return true if we're just generating the DDL for the import, but
    * not actually running it (i.e., --generate-only mode). If so, don't
    * do any side-effecting actions in Hive.
+   * 如果设置了 --generate-only,则表示仅仅生成hive的DDL,并不会真正的运行他,因此不会有任何数据的流动
    */
   private boolean isGenerateOnly() {
     return generateOnly;
@@ -139,29 +144,29 @@ public class HiveImport {
    * If we're in gen-only mode, this should be a file in the outdir, named
    * after the Hive table we're creating. If we're in import mode, this should
    * be a one-off temporary file.
+   * 创建脚本文件
    */
   private File getScriptFile(String outputTableName) throws IOException {
     if (!isGenerateOnly()) {
       return File.createTempFile("hive-script-", ".txt",
-          new File(options.getTempDir()));
+          new File(options.getTempDir()));//在临时目录下创建hive-script-**.txt的脚本文件
     } else {
       return new File(new File(options.getCodeOutputDir()),
-          outputTableName + ".q");
+          outputTableName + ".q");//创建一个.q的文件
     }
   }
 
   /**
    * Perform the import of data from an HDFS path to a Hive table.
    *
-   * @param inputTableName the name of the table as loaded into HDFS
-   * @param outputTableName the name of the table to create in Hive.
-   * @param createOnly if true, run the CREATE TABLE statement but not
-   * LOAD DATA.
+   * @param inputTableName the name of the table as loaded into HDFS 被加载到HDFS时候的输入源的table名字
+   * @param outputTableName the name of the table to create in Hive.//导入到hive中的table名字
+   * @param createOnly if true, run the CREATE TABLE statement but not LOAD DATA. true表示没有数据的时候也要创建hive的DDL
    */
   public void importTable(String inputTableName, String outputTableName,
       boolean createOnly) throws IOException {
 
-    if (null == outputTableName) {
+    if (null == outputTableName) {//如果没有输出的hive的table名字,则默认与输入名字一样
       outputTableName = inputTableName;
     }
     LOG.debug("Hive.inputTable: " + inputTableName);
@@ -182,15 +187,17 @@ public class HiveImport {
     // generate the HQL statements to run.
     // reset the connection as it might have timed out
     connManager.discardConnection(true);
+
+    //创建hive的建表语句和加载数据语句对象
     TableDefWriter tableWriter = new TableDefWriter(options, connManager,
         inputTableName, outputTableName,
         configuration, !debugMode);
-    String createTableStr = tableWriter.getCreateTableStmt() + ";\n";
-    String loadDataStmtStr = tableWriter.getLoadDataStmt() + ";\n";
-    Path finalPath = tableWriter.getFinalPath();
+    String createTableStr = tableWriter.getCreateTableStmt() + ";\n";//创建hive的建表DDL
+    String loadDataStmtStr = tableWriter.getLoadDataStmt() + ";\n";//创建hive的加载数据的DDL
+    Path finalPath = tableWriter.getFinalPath();//最终写入到hive的HDFS什么目录下
 
-    if (!isGenerateOnly()) {
-      removeTempLogs(finalPath);
+    if (!isGenerateOnly()) {//false表示不仅仅是建表语句
+      removeTempLogs(finalPath);//创建临时目录,并且移除该临时目录
       LOG.info("Loading uploaded data into Hive");
 
       String codec = options.getCompressionCodec();
@@ -209,7 +216,7 @@ public class HiveImport {
       }
     }
 
-    // write them to a script file.
+    // write them to a script file.获取脚本,将hive的建表语法和load语法写入脚本中
     File scriptFile = getScriptFile(outputTableName);
     try {
       String filename = scriptFile.toString();
@@ -236,8 +243,8 @@ public class HiveImport {
         }
       }
 
-      if (!isGenerateOnly()) {
-        executeScript(filename, env);
+      if (!isGenerateOnly()) {//如果是false,表示要执行该建表语法和导入语法
+        executeScript(filename, env);//执行
 
         LOG.info("Hive import complete.");
 
@@ -256,6 +263,7 @@ public class HiveImport {
   }
 
   /**
+   * 导入到hive后,要清理输入源目录
    * Clean up after successful HIVE import.
    *
    * @param outputPath path to the output directory
@@ -295,6 +303,7 @@ public class HiveImport {
    * @param filename The script file to run.
    * @param env the environment strings to pass to any subprocess.
    * @throws IOException if Hive did not exit successfully.
+   * 执行建表和load数据的hive脚本
    */
   private void executeScript(String filename, List<String> env)
       throws IOException {
@@ -390,4 +399,3 @@ public class HiveImport {
     }
   }
 }
-

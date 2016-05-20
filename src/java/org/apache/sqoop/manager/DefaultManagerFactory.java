@@ -28,6 +28,7 @@ import com.cloudera.sqoop.manager.ConnManager;
 /**
  * Contains instantiation code for all ConnManager implementations
  * shipped and enabled by default in Sqoop.
+ * 默认的连接管理器
  */
 public class DefaultManagerFactory
     extends com.cloudera.sqoop.manager.ManagerFactory {
@@ -38,7 +39,7 @@ public class DefaultManagerFactory
   public ConnManager accept(JobData data) {
     SqoopOptions options = data.getSqoopOptions();
 
-    String scheme = extractScheme(options);
+    String scheme = extractScheme(options);//根据连接串获取scheme前缀
     if (null == scheme) {
       // We don't know if this is a mysql://, hsql://, etc.
       // Can't do anything with this.
@@ -85,8 +86,9 @@ public class DefaultManagerFactory
     }
   }
 
+  //提取scheme信息,即连接串//之前的数据,比如jdbc:mysql://ip,那么结果就是jdbc:mysql:返回值
   protected String extractScheme(SqoopOptions options) {
-    String connectStr = options.getConnectString();
+    String connectStr = options.getConnectString();//连接串
 
     // java.net.URL follows RFC-2396 literally, which does not allow a ':'
     // character in the scheme component (section 3.1). JDBC connect strings,

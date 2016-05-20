@@ -32,10 +32,11 @@ import com.cloudera.sqoop.lib.SqoopRecord;
  * is the "guts" of the item, and a boolean value indicating whether it is a
  * "new" record or an "old" record. In the Reducer, we prefer to emit a new
  * record rather than an old one, if a new one is available.
+ * 合并新老数据记录
  */
 public class MergeRecord implements Configurable, Writable {
-  private SqoopRecord sqoopRecord;
-  private boolean isNew;
+  private SqoopRecord sqoopRecord;//一行原始记录
+  private boolean isNew;//该记录是新文件还是老文件
   private Configuration config;
 
   /** Construct an empty MergeRecord. */

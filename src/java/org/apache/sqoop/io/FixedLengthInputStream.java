@@ -29,11 +29,17 @@ import org.apache.commons.io.input.ProxyInputStream;
  * from an underlying stream. Closing the FixedLengthInputStream does not
  * close the underlying stream. After reading the maximum number of available
  * bytes this acts as though EOF has been reached.
+ * 读取固定长度的信息的输入流
+ *
  */
 public class FixedLengthInputStream extends ProxyInputStream {
 
   private CountingInputStream countingIn;
-  private long maxBytes;
+    /**
+     * 如果输入源比该值大,则读取这些字节为固定字节数就停止读取.
+     * 如果数据源比该值小,则读取全部输入源数据即可
+     */
+  private long maxBytes;//最多读取这些个字节
 
   public FixedLengthInputStream(InputStream stream, long maxLen) {
     super(new CountingInputStream(new CloseShieldInputStream(stream)));
@@ -85,3 +91,4 @@ public class FixedLengthInputStream extends ProxyInputStream {
     }
   }
 }
+

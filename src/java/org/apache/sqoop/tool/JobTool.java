@@ -45,6 +45,7 @@ import org.apache.sqoop.util.LoggingUtils;
 
 /**
  * Tool that creates and executes saved jobs.
+ * 将job的信息存储在JobStorage引擎中,并且可以调用和打印定义的job信息
  */
 public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -71,9 +72,10 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   /**
    * Given an array of strings, return all elements of this
    * array up to (but not including) the first instance of "--".
+   * 返回参数数组中在"--"符号之前的字符串集合
    */
   private String [] getElementsUpToDoubleDash(String [] array) {
-    String [] parseableChildArgv = null;
+    String [] parseableChildArgv = null;//返回参数数组中在"--"符号之前的字符串集合
     for (int i = 0; i < array.length; i++) {
       if ("--".equals(array[i])) {
         parseableChildArgv = Arrays.copyOfRange(array, 0, i);
@@ -93,6 +95,8 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
    * Given an array of strings, return the first instance
    * of "--" and all following elements.
    * If no "--" exists, return null.
+   * 返回参数数组中在"--"符号之后的字符串集合
+   * 如果没有"--符号,则返回null
    */
   private String [] getElementsAfterDoubleDash(String [] array) {
     String [] extraChildArgv = null;
@@ -106,15 +110,16 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     return extraChildArgv;
   }
 
+  //根据参数,配置sqoop的参数信息
   private int configureChildTool(SqoopOptions childOptions,
       SqoopTool childTool, String [] childArgv) {
     // Within the child arguments there may be a '--' followed by
     // dependent args. Stash them off to the side.
 
-    // Everything up to the '--'.
+    // Everything up to the '--'."--"之前的数组
     String [] parseableChildArgv = getElementsUpToDoubleDash(childArgv);
 
-    // The '--' and any subsequent args.
+    // The '--' and any subsequent args."--"之后的数组
     String [] extraChildArgv = getElementsAfterDoubleDash(childArgv);
 
     // Now feed the arguments into the tool itself.
@@ -135,22 +140,24 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     return 0; // Success.
   }
 
+  //创建一个job
   private int createJob(SqoopOptions options) throws IOException {
     // In our extraArguments array, we should have a '--' followed by
     // a tool name, and any tool-specific arguments.
     // Create an instance of the named tool and then configure it to
     // get a SqoopOptions out which we will serialize into a job.
-    int dashPos = getDashPosition(extraArguments);
+      //sqoop的job必须以--开头定义,比如 --create
+    int dashPos = getDashPosition(extraArguments);//查找数组中"--"的位置
     int toolArgPos = dashPos + 1;
     if (null == extraArguments || toolArgPos < 0
-        || toolArgPos >= extraArguments.length) {
+        || toolArgPos >= extraArguments.length) {//发现没有额外的--参数,因此要停止程序运行
       LOG.error("No tool specified; cannot create a job.");
       LOG.error("Use: sqoop job --create <job-name> "
           + "-- <tool-name> [tool-args]");
       return 1;
     }
 
-    String jobToolName = extraArguments[toolArgPos];
+    String jobToolName = extraArguments[toolArgPos];//获取job任务类型,比如import
     SqoopTool jobTool = SqoopTool.getTool(jobToolName);
     if (null == jobTool) {
       LOG.error("No such tool available: " + jobToolName);

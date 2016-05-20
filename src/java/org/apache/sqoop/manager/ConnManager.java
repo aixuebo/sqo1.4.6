@@ -50,6 +50,35 @@ import com.cloudera.sqoop.util.ImportException;
  * Abstract interface that manages connections to a database.
  * The implementations of this class drive the actual discussion with
  * the database about table formats, etc.
+ 1. 获取边界查询的sql:select min(<split-by>), max(<split-by>) from <table name>
+ 2. 移动数据  INSERT INTO toTable ( SELECT * FROM fromTable ) ; DELETE FROM fromTable
+ 3. 删除该表的所有数据 DELETE FROM  tableName
+ 4. 获取该table有多少行数据 SELECT COUNT(*) FROM tableName
+ 5. 获取当前数据库的时间 SELECT CURRENT_TIMESTAMP()
+ 6. 更新数据库的数据信息  JdbcUpdateExportJob exportJob = new JdbcUpdateExportJob(context);
+ 7. 存储过程调用  JdbcCallExportJob exportJob = new JdbcCallExportJob(context);
+ 8. 将HDFS的数据写入到数据库中  JdbcExportJob exportJob = new JdbcExportJob(context);
+ 9.根据sql或者table,把数据分别导入hbase、hbase、Accumulo、HDFS
+ ImportJobBase importer = new HBaseImportJob(opts, context);
+ ImportJobBase importer = new HBaseBulkImportJob(opts, context);
+ ImportJobBase importer = new AccumuloImportJob(opts, context);
+ ImportJobBase importer = new DataDrivenImportJob(opts, context);
+ 如果是根据sql导入的,则要设置查询边界sql或者设置SplitColumn
+ 如果map=1,则必须要设置查询边界
+ 如果设置多个map,必须要有split拆分列
+ 查询边界demo:select min(<split-by>), max(<split-by>) from <table name>
+ 10. 获取一个数据库连接
+ 11. 执行sql,并将结果打印到控制台
+ 12. 执行sql查询数据,返回ResultSet
+ 13.读取一个table的一些属性的信息 select column1,column2 from tableName as tableName,返回ResultSet
+ 14. 提供连接器一个机会去验证import任务是否有效,无效则抛异常 checkTableImportOptions
+ 15. 获取拆分列,默认是按照主键进行拆分,什么列进行map的数据拆分
+ 16. 返回一个表的主键
+ 17. 返回所有table名称集合
+ 18. 返回所有的数据库名称集合
+ 19. 返回一个sql或者表的属性与属性值的映射Map
+ 20. 查询sql或者表中对应的属性集合
+ 21. 返回值是map,key是属性,value是属性的信息,包含属性类型、属性整数保留位数、属性小数保留位数
  */
 public abstract class ConnManager {
 
@@ -57,11 +86,13 @@ public abstract class ConnManager {
 
   /**
    * Return a list of all databases on a server.
+   * 查询所有的数据库集合
    */
   public abstract String [] listDatabases();
 
   /**
    * Return a list of all tables in a database.
+   * 获取数据库中所有的table集合
    */
   public abstract String [] listTables();
 
@@ -96,6 +127,7 @@ public abstract class ConnManager {
    * Resolve a database-specific type to the Java type that should contain it.
    * @param sqlType     sql type
    * @return the name of a Java type to hold the sql datatype, or null if none.
+   * 将sql类型转换成java类型
    */
   public String toJavaType(int sqlType) {
     // Mappings taken from:
@@ -160,6 +192,7 @@ public abstract class ConnManager {
    * Resolve a database-specific type to Hive data type.
    * @param sqlType     sql type
    * @return            hive type
+   * sql类型与hive类型的映射
    */
   public String toHiveType(int sqlType) {
     return HiveTypes.toHiveType(sqlType);
@@ -171,6 +204,7 @@ public abstract class ConnManager {
    * @param sqlType
    *          sql type
    * @return hcat type
+    * 将sql类型与gcat类型映射
    */
   public String toHCatType(int sqlType) {
     return SqoopHCatUtilities.toHCatType(sqlType);
@@ -180,6 +214,7 @@ public abstract class ConnManager {
    * Resolve a database-specific type to Avro data type.
    * @param sqlType     sql type
    * @return            avro type
+   * 将sql类型与avro类型映射
    */
   public Type toAvroType(int sqlType) {
     switch (sqlType) {
@@ -228,6 +263,7 @@ public abstract class ConnManager {
    * @param columnName  column name
    * @param sqlType     sql type
    * @return            java type
+   * 将table的column列的sql类型转换成java类型
    */
   public String toJavaType(String tableName, String columnName, int sqlType) {
     // ignore table name and column name by default.
@@ -240,6 +276,7 @@ public abstract class ConnManager {
    * @param columnName  column name
    * @param sqlType     sql type
    * @return            hive type
+   * 将table的column列的sql类型转换成hive类型
    */
   public String toHiveType(String tableName, String columnName, int sqlType) {
     // ignore table name and column name by default.
@@ -252,6 +289,7 @@ public abstract class ConnManager {
    * @param columnName  column name
    * @param sqlType     sql type
    * @return            avro type
+   * 将table的column列的sql类型转换成avro类型
    */
   public Type toAvroType(String tableName, String columnName, int sqlType) {
     // ignore table name and column name by default.
@@ -263,6 +301,7 @@ public abstract class ConnManager {
    * all columns in a table.
    *
    * The Integer type id is a constant from java.sql.Types
+   * 返回该table每一个属性对应的类型映射关系
    */
   public abstract Map<String, Integer> getColumnTypes(String tableName);
 
@@ -284,19 +323,21 @@ public abstract class ConnManager {
    *
    * The Integer type id is a constant from java.sql.Types
    *
-   * @param tableName the name of the table
-   * @param sqlQuery the SQL query to use if tableName is null
+   * @param tableName the name of the table 查询哪个表
+   * @param sqlQuery the SQL query to use if tableName is null 查询sql,如果tableName=null,则使用该查询语句
+   *
+   * 返回该table每一个属性对应的类型映射关系
    */
   public Map<String, Integer> getColumnTypes(String tableName,
       String sqlQuery) throws IOException {
     Map<String, Integer> columnTypes;
     if (null != tableName) {
       // We're generating a class based on a table import.
-      columnTypes = getColumnTypes(tableName);
+      columnTypes = getColumnTypes(tableName);//返回该table每一个属性对应的类型映射关系
     } else {
       // This is based on an arbitrary query.
       String query = sqlQuery;
-      if (query.indexOf(SqlManager.SUBSTITUTE_TOKEN) == -1) {
+      if (query.indexOf(SqlManager.SUBSTITUTE_TOKEN) == -1) {//查看query中是否包含 $CONDITIONS,该字符串必须存在
         throw new IOException("Query [" + query + "] must contain '"
             + SqlManager.SUBSTITUTE_TOKEN + "' in WHERE clause.");
       }
@@ -502,6 +543,7 @@ public abstract class ConnManager {
    * all columns in a query.
    *
    * The Integer type id is a constant from java.sql.Types
+   * 查询该sql中每一个属性与该属性的类型映射关系
    */
   public Map<String, Integer> getColumnTypesForQuery(String query) {
     LOG.error("This database does not support free-form query column types.");
@@ -521,11 +563,13 @@ public abstract class ConnManager {
 
   /**
    * @return the actual database connection.
+   * 返回数据库的连接
    */
   public abstract Connection getConnection() throws SQLException;
 
   /**
    * discard the database connection.
+   * 销毁一个数据库的连接
    */
   public void discardConnection(boolean doClose) {
     throw new UnsupportedOperationException("No discard connection support "
@@ -535,16 +579,19 @@ public abstract class ConnManager {
   /**
    * @return a string identifying the driver class to load for this
    * JDBC connection type.
+   * 数据库连接驱动
    */
   public abstract String getDriverClass();
 
   /**
    * Execute a SQL statement 's' and print its results to stdout.
+   * 执行一个sql,然后打印输出到控制台
    */
   public abstract void execAndPrint(String s);
 
   /**
    * Perform an import of a table from the database into HDFS.
+   * 从数据库中导入一个表到HDFS上,根据表名字进行导入
    */
   public abstract void importTable(
           com.cloudera.sqoop.manager.ImportJobContext context)
@@ -552,6 +599,7 @@ public abstract class ConnManager {
 
   /**
    * Perform an import of a free-form query from the database into HDFS.
+   * 从数据库中导入一个表到HDFS上,根据一个sql进行导入
    */
   public void importQuery(com.cloudera.sqoop.manager.ImportJobContext context)
       throws IOException, ImportException {
@@ -566,6 +614,7 @@ public abstract class ConnManager {
    *
    * @param colName the column name as provided by the user, etc.
    * @return how the column name should be rendered in the sql text.
+   * 对列进行``包装
    */
   public String escapeColName(String colName) {
     return colName;
@@ -601,6 +650,7 @@ public abstract class ConnManager {
   /**
    * Export data stored in HDFS into a table in a database.
    * This inserts new rows into the target table.
+   * export将数据导入到数据库中,仅仅执行insert,不需要任何update操作,所有进来都插入到数据库中即可
    */
   public void exportTable(com.cloudera.sqoop.manager.ExportJobContext context)
       throws IOException, ExportException {
@@ -610,6 +660,7 @@ public abstract class ConnManager {
   /**
    * Export data stored in HDFS into a table in a database. This calls a stored
    * procedure to insert rows into the target table.
+   * export将数据导入到数据库中,仅仅存储过程插入数据的
    */
   public void callTable(com.cloudera.sqoop.manager.ExportJobContext context)
       throws IOException, ExportException {
@@ -621,6 +672,7 @@ public abstract class ConnManager {
    * Export updated data stored in HDFS into a database table.
    * This updates existing rows in the target table, based on the
    * updateKeyCol specified in the context's SqoopOptions.
+   * export数据到数据库中,该操作仅仅是将数据库中存在的行进行更新操作,不存在的,则跳过不更新
    */
   public void updateTable(com.cloudera.sqoop.manager.ExportJobContext context)
       throws IOException, ExportException {
@@ -631,6 +683,7 @@ public abstract class ConnManager {
    * Export data stored in HDFS into a table in a database.
    * This may update or insert rows into the target table depending on
    * whether rows already exist in the target table or not.
+   * export数据到数据库中,可以执行更新操作,也可以执行insert操作
    */
   public void upsertTable(com.cloudera.sqoop.manager.ExportJobContext context)
       throws IOException, ExportException {
@@ -715,6 +768,7 @@ public abstract class ConnManager {
   /**
    * Return the current time from the perspective of the database server.
    * Return null if this cannot be accessed.
+   * 获取当前数据库的时间戳
    */
   public Timestamp getCurrentDbTimestamp() {
     LOG.warn("getCurrentDbTimestamp(): Using local system timestamp.");
@@ -724,6 +778,7 @@ public abstract class ConnManager {
   /**
    * Given a non-null Timestamp, return the quoted string that can
    * be inserted into a SQL statement, representing that timestamp.
+   * 将时间类型转换成String类型
    */
   public String timestampToQueryString(Timestamp ts) {
     return "'" + ts + "'";
@@ -732,6 +787,7 @@ public abstract class ConnManager {
   /**
    * Given a date/time, return the quoted string that can
    * be inserted into a SQL statement, representing that date/time.
+   * 将sql的时间类型的结果转换成字符串
    */
   public String datetimeToQueryString(String datetime, int columnType) {
     if (columnType != Types.TIMESTAMP && columnType != Types.DATE) {
@@ -776,6 +832,7 @@ public abstract class ConnManager {
    * Determine if a column is char or a char-variant type.
    * @return true if column type is CHAR, VARCHAR, LONGVARCHAR
    * or their N version. These are used to store strings.
+   * true表示是字符类型
    */
   public boolean isCharColumn(int columnType) {
     return (columnType == Types.VARCHAR)

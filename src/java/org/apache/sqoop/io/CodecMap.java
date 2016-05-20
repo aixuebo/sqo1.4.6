@@ -29,6 +29,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 
 /**
  * Provides a mapping from codec names to concrete implementation class names.
+ * 提供一个压缩代码与class的映射关系
  */
 public final class CodecMap {
 
@@ -41,6 +42,7 @@ public final class CodecMap {
   public static final String LZO = "lzo";
   public static final String LZOP = "lzop";
 
+  //key是code,value是对应的实现类全路径
   private static Map<String, String> codecNames;
   static {
     codecNames = new TreeMap<String, String>();
@@ -72,10 +74,11 @@ public final class CodecMap {
    * that implements it (or 'null' in the case of the "none" codec).
    * @throws com.cloudera.sqoop.io.UnsupportedCodecException if a codec cannot
    * be found with the supplied name.
+   * 通过code返回对应的压缩方式实现类全路径
    */
   public static String getCodecClassName(String codecName)
       throws com.cloudera.sqoop.io.UnsupportedCodecException {
-    if (!codecNames.containsKey(codecName)) {
+    if (!codecNames.containsKey(codecName)) {//抛异常,不支持该压缩方式
       throw new com.cloudera.sqoop.io.UnsupportedCodecException(codecName);
     }
 
@@ -116,6 +119,7 @@ public final class CodecMap {
 
   /**
    * Return the set of available codec names.
+   * 返回所有的压缩方式编码集合
    */
   public static Set<String> getCodecNames() {
     return codecNames.keySet();

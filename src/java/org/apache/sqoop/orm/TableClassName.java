@@ -76,6 +76,7 @@ public class TableClassName {
   /**
    * @param tableName the name of the table being imported.
    * @return the full name of the class to generate/use to import a table.
+   * 根据table名字,找到该table对应的全路径
    */
   public String getClassForTable(String tableName) {
     String predefinedClass = options.getClassName();
@@ -103,9 +104,10 @@ public class TableClassName {
   /**
    * @return just the last segment of the class name -- all package info
    * stripped.
+   * 将包名字都去除,只是返回class的类名
    */
   public String getShortClassForTable(String tableName) {
-    String fullClass = getClassForTable(tableName);
+    String fullClass = getClassForTable(tableName);//获取全路径
     if (null == fullClass) {
       return null;
     }
@@ -114,7 +116,7 @@ public class TableClassName {
     if (-1 == lastDot) {
       return fullClass;
     } else {
-      return fullClass.substring(lastDot + 1, fullClass.length());
+      return fullClass.substring(lastDot + 1, fullClass.length());//返回类名字
     }
   }
 }

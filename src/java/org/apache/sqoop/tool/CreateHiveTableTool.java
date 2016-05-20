@@ -35,6 +35,7 @@ import com.cloudera.sqoop.hive.HiveImport;
 
 /**
  * Tool that creates a Hive table definition.
+ * 为hive创建table表的工具对象
  */
 public class CreateHiveTableTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -43,7 +44,7 @@ public class CreateHiveTableTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
   public CreateHiveTableTool() {
     super("create-hive-table");
-  }
+  }//表示创建hive的table
 
   @Override
   /** {@inheritDoc} */
@@ -56,7 +57,7 @@ public class CreateHiveTableTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       HiveImport hiveImport = new HiveImport(options, manager,
           options.getConf(), false);
       hiveImport.importTable(options.getTableName(),
-          options.getHiveTableName(), true);
+          options.getHiveTableName(), true);//对数据库的table信息,在hive中对应一个表信息
     } catch (IOException ioe) {
       LOG.error("Encountered IOException running create table job: "
           + StringUtils.stringifyException(ioe));

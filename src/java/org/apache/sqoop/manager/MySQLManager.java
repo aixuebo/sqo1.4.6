@@ -47,16 +47,17 @@ import org.apache.sqoop.util.LoggingUtils;
 
 /**
  * Manages connections to MySQL databases.
+ * 连接mysql的数据库
  */
 public class MySQLManager
     extends com.cloudera.sqoop.manager.InformationSchemaManager {
 
   public static final Log LOG = LogFactory.getLog(MySQLManager.class.getName());
 
-  // driver class to ensure is loaded when making db connection.
+  // driver class to ensure is loaded when making db connection.设置驱动
   private static final String DRIVER_CLASS = "com.mysql.jdbc.Driver";
 
-  // set to true after we warn the user that we can use direct fastpath.
+  // set to true after we warn the user that we can use direct fastpath.true表示我们会警告用户可以使用direct导入方式导入数据
   private static boolean warningPrinted = false;
 
   public MySQLManager(final SqoopOptions opts) {
@@ -97,28 +98,30 @@ public class MySQLManager
     return "SELECT t.* FROM " + escapeTableName(tableName) + " AS t LIMIT 1";
   }
 
+  //导入数据库数据到HDFS上
   @Override
   public void importTable(com.cloudera.sqoop.manager.ImportJobContext context)
       throws IOException, ImportException {
 
     // Check that we're not doing a MapReduce from localhost. If we are, point
     // out that we could use mysqldump.
+    //打印提示信息,让用户使用direct命令
     if (!MySQLManager.warningPrinted) {
       String connectString = context.getOptions().getConnectString();
 
       if (null != connectString) {
         // DirectMySQLManager will probably be faster.
-        LOG.warn("It looks like you are importing from mysql.");
-        LOG.warn("This transfer can be faster! Use the --direct");
+        LOG.warn("It looks like you are importing from mysql.");//这个看起来像从mysql中导出数据
+        LOG.warn("This transfer can be faster! Use the --direct");//使用direct命令会导出更快
         LOG.warn("option to exercise a MySQL-specific fast path.");
 
-        MySQLManager.markWarningPrinted(); // don't display this twice.
+        MySQLManager.markWarningPrinted(); // don't display this twice.设置成true,不让他展现两次
       }
     }
 
     checkDateTimeBehavior(context);
 
-    // Then run the normal importTable() method.
+    // Then run the normal importTable() method.运行普通的导出方法
     super.importTable(context);
   }
 
@@ -167,6 +170,9 @@ public class MySQLManager
    * which causes errors in import. If the user has not set the
    * zeroDateTimeBehavior property already, we set it for them to coerce
    * the type to null.
+   * mysql允许TIMESTAMP属性有值为0000-00-00 00:00:00,这会有一些问题在导入过程中
+   * 如果用户没有设置zeroDateTimeBehavior属性,我们去强制设置他的类型为null
+   * 即该方法在连接串里面加入zeroDateTimeBehavior=convertToNull即可
    */
   private void checkDateTimeBehavior(ImportJobContext context) {
     final String ZERO_BEHAVIOR_STR = "zeroDateTimeBehavior";
@@ -181,6 +187,7 @@ public class MySQLManager
 
     // This starts with 'jdbc:mysql://' ... let's remove the 'jdbc:'
     // prefix so that java.net.URI can parse the rest of the line.
+    //在连接串里面加入zeroDateTimeBehavior=convertToNull即可
     String uriComponent = connectStr.substring(5);
     try {
       URI uri = new URI(uriComponent);
@@ -188,7 +195,7 @@ public class MySQLManager
 
       // If they haven't set the zeroBehavior option, set it to
       // squash-null for them.
-      if (null == query) {
+      if (null == query) {//没有query,则加入参数zeroDateTimeBehavior=convertToNull
         connectStr = connectStr + "?" + ZERO_BEHAVIOR_STR + CONVERT_TO_NULL;
         LOG.info("Setting zero DATETIME behavior to convertToNull (mysql)");
       } else if (query.length() == 0) {
@@ -212,6 +219,7 @@ public class MySQLManager
     }
   }
 
+  //执行sql,并且打印在控制台
   @Override
   public void execAndPrint(String s) {
     // Override default execAndPrint() with a special version that forces
@@ -272,6 +280,7 @@ public class MySQLManager
     return true;
   }
 
+  //执行存储过程
   @Override
   public String[] getColumnNamesForProcedure(String procedureName) {
     List<String> ret = new ArrayList<String>();
@@ -306,6 +315,7 @@ public class MySQLManager
     }
   }
 
+  //执行存储过程
   @Override
   public Map<String, Integer> getColumnTypesForProcedure(String procedureName) {
     Map<String, Integer> ret = new TreeMap<String, Integer>();
@@ -348,6 +358,7 @@ public class MySQLManager
     }
   }
 
+  //执行存储过程
   @Override
   public Map<String, String>
     getColumnTypeNamesForProcedure(String procedureName) {
@@ -403,6 +414,7 @@ public class MySQLManager
     return "SELECT SCHEMA()";
   }
 
+  //将mysql的year类型转换成sql的SMALLINT类型
   private Map<String, String> colTypeNames;
   private static final int YEAR_TYPE_OVERWRITE = Types.SMALLINT;
 

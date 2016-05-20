@@ -27,13 +27,13 @@ public class MergeJob
     extends org.apache.sqoop.mapreduce.MergeJob {
 
   public static final String MERGE_OLD_PATH_KEY =
-      org.apache.sqoop.mapreduce.MergeJob.MERGE_OLD_PATH_KEY;
+      org.apache.sqoop.mapreduce.MergeJob.MERGE_OLD_PATH_KEY;//老数据所在的path路径
   public static final String MERGE_NEW_PATH_KEY =
-      org.apache.sqoop.mapreduce.MergeJob.MERGE_NEW_PATH_KEY;
+      org.apache.sqoop.mapreduce.MergeJob.MERGE_NEW_PATH_KEY;//新数据所在的path路径
   public static final String MERGE_KEY_COL_KEY =
-      org.apache.sqoop.mapreduce.MergeJob.MERGE_KEY_COL_KEY;
+      org.apache.sqoop.mapreduce.MergeJob.MERGE_KEY_COL_KEY;//用什么字段进行merge合并
   public static final String MERGE_SQOOP_RECORD_KEY =
-      org.apache.sqoop.mapreduce.MergeJob.MERGE_SQOOP_RECORD_KEY;
+      org.apache.sqoop.mapreduce.MergeJob.MERGE_SQOOP_RECORD_KEY;//合并的记录对象
 
   public MergeJob(final SqoopOptions opts) {
     super(opts);

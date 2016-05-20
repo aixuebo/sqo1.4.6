@@ -59,9 +59,9 @@ public class MergeJob extends JobBase {
 
   public boolean runMergeJob() throws IOException {
     Configuration conf = options.getConf();
-    Job job = createJob(conf);
+    Job job = createJob(conf);//创建一个hadoop的job对象
 
-    String userClassName = options.getClassName();
+    String userClassName = options.getClassName();//执行job的class全路径
     if (null == userClassName) {
       // Shouldn't get here.
       throw new IOException("Record class name not specified with "
@@ -69,21 +69,21 @@ public class MergeJob extends JobBase {
     }
 
     // Set the external jar to use for the job.
-    String existingJar = options.getExistingJarName();
+    String existingJar = options.getExistingJarName();//执行特定job的jar文件
     if (existingJar != null) {
       // User explicitly identified a jar path.
       LOG.debug("Setting job jar to user-specified jar: " + existingJar);
-      job.getConfiguration().set("mapred.jar", existingJar);
+      job.getConfiguration().set("mapred.jar", existingJar);//将jar文件作为hadoop job的主文件
     } else {
       // Infer it from the location of the specified class, if it's on the
       // classpath.
       try {
         Class<? extends Object> userClass = conf.getClassByName(userClassName);
         if (null != userClass) {
-          String userJar = Jars.getJarPathForClass(userClass);
+          String userJar = Jars.getJarPathForClass(userClass);//找到job的class所对应的jar包
           LOG.debug("Setting job jar based on user class " + userClassName
               + ": " + userJar);
-          job.getConfiguration().set("mapred.jar", userJar);
+          job.getConfiguration().set("mapred.jar", userJar);//设置hadoop的job的主文件
         } else {
           LOG.warn("Specified class " + userClassName + " is not in a jar. "
               + "MapReduce may not find the class");
@@ -104,15 +104,16 @@ public class MergeJob extends JobBase {
 
       propagateOptionsToJob(job);
 
+        //将新老路径作为输入源
       FileInputFormat.addInputPath(job, oldPath);
       FileInputFormat.addInputPath(job, newPath);
 
       jobConf.set(MERGE_OLD_PATH_KEY, oldPath.toString());
       jobConf.set(MERGE_NEW_PATH_KEY, newPath.toString());
-      jobConf.set(MERGE_KEY_COL_KEY, options.getMergeKeyCol());
+      jobConf.set(MERGE_KEY_COL_KEY, options.getMergeKeyCol());//哪什么字段进行合并
       jobConf.set(MERGE_SQOOP_RECORD_KEY, userClassName);
 
-      FileOutputFormat.setOutputPath(job, new Path(options.getTargetDir()));
+      FileOutputFormat.setOutputPath(job, new Path(options.getTargetDir()));//合并后的输出目录
 
       if (ExportJobBase.isSequenceFiles(jobConf, newPath)) {
         job.setInputFormatClass(SequenceFileInputFormat.class);

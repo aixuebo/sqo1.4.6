@@ -37,6 +37,7 @@ import com.cloudera.sqoop.util.ExportException;
 
 /**
  * Tool that performs HDFS exports to databases.
+ * 将HDFS上的数据,导入到数据库中
  */
 public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -56,6 +57,7 @@ public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     return codeGenerator.getGeneratedJarFiles();
   }
 
+  //将数据源导入到什么table中
   private void exportTable(SqoopOptions options, String tableName)
       throws ExportException, IOException {
     String jarFile = null;
@@ -63,21 +65,22 @@ public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     // Generate the ORM code for the tables.
     jarFile = codeGenerator.generateORM(options, tableName);
 
+    //export导出到数据库的任务上下文
     ExportJobContext context = new ExportJobContext(tableName, jarFile,
         options);
-    if (options.getUpdateKeyCol() != null) {
-      if (options.getUpdateMode() == UpdateMode.UpdateOnly) {
+    if (options.getUpdateKeyCol() != null) {//存在根据什么属性进行update操作
+      if (options.getUpdateMode() == UpdateMode.UpdateOnly) {//仅仅更新操作
         // UPDATE-based export.
-        manager.updateTable(context);
+        manager.updateTable(context);//export数据到数据库中,该操作仅仅是将数据库中存在的行进行更新操作,不存在的,则跳过不更新
       } else {
         // Mixed update/insert export
-        manager.upsertTable(context);
+        manager.upsertTable(context);//export数据到数据库中,可以执行更新操作,也可以执行insert操作
       }
-    } else if (options.getCall() != null) {
+    } else if (options.getCall() != null) {//不导入到table中,而是使用call
       // Stored procedure-based export.
-        manager.callTable(context);
-    } else {
-      // INSERT-based export.
+        manager.callTable(context);//export将数据导入到数据库中,仅仅存储过程插入数据的
+    } else {//不更新,仅仅是insert操作
+      // INSERT-based export.export将数据导入到数据库中,仅仅执行insert,不需要任何update操作,所有进来都插入到数据库中即可
       manager.exportTable(context);
     }
   }
@@ -130,42 +133,42 @@ public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     exportOpts.addOption(OptionBuilder
         .withDescription("Use direct export fast path")
-        .withLongOpt(DIRECT_ARG)
+        .withLongOpt(DIRECT_ARG)//是否使用类似mysql的快速直接导入功能
         .create());
     exportOpts.addOption(OptionBuilder.withArgName("table-name")
         .hasArg().withDescription("Table to populate")
-        .withLongOpt(TABLE_ARG)
+        .withLongOpt(TABLE_ARG)//导入到什么表中
         .create());
     exportOpts.addOption(OptionBuilder.withArgName("col,col,col...")
         .hasArg().withDescription("Columns to export to table")
-        .withLongOpt(COLUMNS_ARG)
+        .withLongOpt(COLUMNS_ARG)//导入哪些列
         .create());
     exportOpts.addOption(OptionBuilder.withArgName("name")
         .hasArg().withDescription("Set name for generated mapreduce job")
-        .withLongOpt(MAPREDUCE_JOB_NAME)
+        .withLongOpt(MAPREDUCE_JOB_NAME)//job的名字
         .create());
     exportOpts.addOption(OptionBuilder.withArgName("n")
         .hasArg().withDescription("Use 'n' map tasks to export in parallel")
-        .withLongOpt(NUM_MAPPERS_ARG)
+        .withLongOpt(NUM_MAPPERS_ARG)//多少map任务
         .create(NUM_MAPPERS_SHORT_ARG));
     exportOpts.addOption(OptionBuilder.withArgName("dir")
         .hasArg()
         .withDescription("HDFS source path for the export")
-        .withLongOpt(EXPORT_PATH_ARG)
+        .withLongOpt(EXPORT_PATH_ARG)//export的时候hdfs上的输入源目录
         .create());
     exportOpts.addOption(OptionBuilder.withArgName("key")
         .hasArg()
         .withDescription("Update records by specified key column")
-        .withLongOpt(UPDATE_KEY_ARG)
+        .withLongOpt(UPDATE_KEY_ARG)//在export的时候 使用哪个字段进行update操作
         .create());
     exportOpts.addOption(OptionBuilder.withArgName("table-name")
         .hasArg().withDescription("Intermediate staging table")
-        .withLongOpt(STAGING_TABLE_ARG)
+        .withLongOpt(STAGING_TABLE_ARG)//export的时候,可以设置一个中间媒介表
         .create());
     exportOpts.addOption(OptionBuilder
         .withDescription("Indicates that any data in "
         + "staging table can be deleted")
-        .withLongOpt(CLEAR_STAGING_TABLE_ARG)
+        .withLongOpt(CLEAR_STAGING_TABLE_ARG)//export的时候,可以设置一个中间媒介表,将中间表内容删除
         .create());
     exportOpts.addOption(OptionBuilder
         .withDescription("Indicates underlying statements "
@@ -177,13 +180,13 @@ public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         .hasArg()
         .withDescription("Specifies how updates are performed when "
             + "new rows are found with non-matching keys in database")
-        .withLongOpt(UPDATE_MODE_ARG)
+        .withLongOpt(UPDATE_MODE_ARG)//export的时候,更新形式,仅仅更新存在的行,或者更新存在的行,insert不存在的行,updateonly或者allowinsert
         .create());
     exportOpts.addOption(OptionBuilder
          .hasArg()
          .withDescription("Populate the table using this stored "
              + "procedure (one call per row)")
-         .withLongOpt(CALL_ARG)
+         .withLongOpt(CALL_ARG)//export将数据导入到数据库中,仅仅存储过程插入数据的
          .create());
 
     addValidationOpts(exportOpts);
@@ -305,18 +308,18 @@ public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
    */
   protected void validateExportOptions(SqoopOptions options)
       throws InvalidOptionsException {
-    if (options.getTableName() == null && options.getCall() == null) {
+    if (options.getTableName() == null && options.getCall() == null) {//导入到table或者call中
       throw new InvalidOptionsException(
           "Export requires a --table or a --call argument."
           + HELP_STR);
     } else if (options.getExportDir() == null
-      && options.getHCatTableName() == null) {
+      && options.getHCatTableName() == null) {//输入源目录
       throw new InvalidOptionsException(
           "Export requires an --export-dir argument or "
           + "--hcatalog-table argument."
           + HELP_STR);
     } else if (options.getExistingJarName() != null
-        && options.getClassName() == null) {
+        && options.getClassName() == null) {//导入的jar包
       throw new InvalidOptionsException("Jar specified with --jar-file, but no "
           + "class specified with --class-name." + HELP_STR);
     } else if (options.getExistingJarName() != null

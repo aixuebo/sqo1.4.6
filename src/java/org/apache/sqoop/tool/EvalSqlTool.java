@@ -41,6 +41,9 @@ import com.cloudera.sqoop.util.ResultSetPrinter;
 
 /**
  * Tool that evaluates a SQL statement and displays the results.
+ * 执行一个sql,然后打印执行结果
+ * 该sql可以是update或者insert的sql,显示影响了多少行记录
+ * 该sql是select的sql,则显示打印查询结果
  */
 public class EvalSqlTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -69,7 +72,7 @@ public class EvalSqlTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       // Iterate over all the results from this statement.
       while (true) {
         LOG.debug("resultType=" + resultType);
-        if (!resultType) {
+        if (!resultType) {//false表示是更新操作,打印影响了多少行数据
           // This result was an update count.
           int updateCount = stmt.getUpdateCount();
           LOG.debug("updateCount=" + updateCount);
@@ -80,7 +83,7 @@ public class EvalSqlTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
           } else {
             LOG.info(updateCount + " row(s) updated.");
           }
-        } else {
+        } else {//表示是查询操作,显示查询结果
           // This yields a ResultSet.
           rs = stmt.getResultSet();
           pw = new PrintWriter(System.out, true);
@@ -134,8 +137,8 @@ public class EvalSqlTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     evalOpts.addOption(OptionBuilder.withArgName("statement")
         .hasArg()
         .withDescription("Execute 'statement' in SQL and exit")
-        .withLongOpt(SQL_QUERY_ARG)
-        .create(SQL_QUERY_SHORT_ARG));
+        .withLongOpt(SQL_QUERY_ARG)//导入的sql
+        .create(SQL_QUERY_SHORT_ARG));//导入的sql
 
     toolOptions.addUniqueOptions(evalOpts);
   }

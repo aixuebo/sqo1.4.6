@@ -137,30 +137,32 @@ public class SqoopOptions implements Cloneable {
   @StoredAsProperty("codegen.auto.compile.dir") private boolean jarDirIsAuto;
   private String hadoopMapRedHome; // not serialized to metastore.
   @StoredAsProperty("db.split.column") private String splitByCol;
-  @StoredAsProperty("db.where.clause") private String whereClause;
-  @StoredAsProperty("db.query") private String sqlQuery;
+  @StoredAsProperty("db.where.clause") private String whereClause;//sql的where条件,没有where关键字,直接写上条件即可
+  @StoredAsProperty("db.query") private String sqlQuery;//纯粹的一个sql语句
   @StoredAsProperty("db.query.boundary") private String boundaryQuery;
   @StoredAsProperty("jdbc.driver.class") private String driverClassName;
-  @StoredAsProperty("hdfs.warehouse.dir") private String warehouseDir;
-  @StoredAsProperty("hdfs.target.dir") private String targetDir;
+  @StoredAsProperty("hdfs.warehouse.dir") private String warehouseDir;//存储hdfs的父目录,所有table都是在该目录下进行存储的
+  @StoredAsProperty("hdfs.target.dir") private String targetDir;//存储在HDFS的哪个目录下
   @StoredAsProperty("hdfs.append.dir") private boolean append;
-  @StoredAsProperty("hdfs.delete-target.dir") private boolean delete;
+  @StoredAsProperty("hdfs.delete-target.dir") private boolean delete;//是否要先删除目录
   @StoredAsProperty("hdfs.file.format") private FileLayout layout;
-  @StoredAsProperty("direct.import") private boolean direct; // "direct mode."
+  @StoredAsProperty("direct.import") private boolean direct; // "direct mode." mysql等快速的导入直接方式
   @StoredAsProperty("db.batch") private boolean batchMode;
   private String tmpDir; // where temp data goes; usually /tmp; not serialized.
   private String hiveHome; // not serialized to metastore.
-  @StoredAsProperty("hive.import") private boolean hiveImport;
+  @StoredAsProperty("hive.import") private boolean hiveImport;//true表示结果要导入到hive中
   @StoredAsProperty("hive.overwrite.table") private boolean overwriteHiveTable;
   @StoredAsProperty("hive.fail.table.exists")
   private boolean failIfHiveTableExists;
-  @StoredAsProperty("hive.table.name") private String hiveTableName;
-  @StoredAsProperty("hive.database.name") private String hiveDatabaseName;
+  @StoredAsProperty("hive.table.name") private String hiveTableName;//hive的表名字
+  @StoredAsProperty("hive.database.name") private String hiveDatabaseName;//hive的仓库名
   @StoredAsProperty("hive.drop.delims") private boolean hiveDropDelims;
   @StoredAsProperty("hive.delims.replacement")
   private String hiveDelimsReplacement;
-  @StoredAsProperty("hive.partition.key") private String hivePartitionKey;
-  @StoredAsProperty("hive.partition.value") private String hivePartitionValue;
+
+  //PARTITION ($key='$value')这部分代码
+  @StoredAsProperty("hive.partition.key") private String hivePartitionKey;//hive按照什么key分区
+  @StoredAsProperty("hive.partition.value") private String hivePartitionValue;//hive按照key分区后,值是什么
   @StoredAsProperty("hcatalog.table.name")
   private String hCatTableName;
   @StoredAsProperty("hcatalog.database.name")
@@ -177,7 +179,7 @@ public class SqoopOptions implements Cloneable {
     private String hCatalogPartitionValues;
   // User explicit mapping of types
   private Properties mapColumnJava; // stored as map.colum.java
-  private Properties mapColumnHive; // stored as map.column.hive
+  private Properties mapColumnHive; // stored as map.column.hive 存储hive的属性映射关系
 
   // An ordered list of column names denoting what order columns are
   // serialized to a PreparedStatement from a generated record type.
@@ -189,11 +191,11 @@ public class SqoopOptions implements Cloneable {
 
   // package+class to apply to individual table import.
   // also used as an *input* class with existingJarFile.
-  @StoredAsProperty("codegen.java.classname") private String className;
+  @StoredAsProperty("codegen.java.classname") private String className;//执行job的class全路径
 
   // Name of a jar containing existing table definition
   // class to use.
-  @StoredAsProperty("codegen.jar.file") private String existingJarFile;
+  @StoredAsProperty("codegen.jar.file") private String existingJarFile;//执行特定job的jar文件
 
   @StoredAsProperty("mapreduce.num.mappers") private int numMappers;
   @StoredAsProperty("enable.compression") private boolean useCompression;
@@ -246,24 +248,24 @@ public class SqoopOptions implements Cloneable {
   @StoredAsProperty("hbase.create.table") private boolean hbaseCreateTable;
 
   // col to filter on for incremental imports.
-  @StoredAsProperty("incremental.col") private String incrementalTestCol;
+  @StoredAsProperty("incremental.col") private String incrementalTestCol;//select max(属性),有时候用于增量导入
   // incremental import mode we're using.
   @StoredAsProperty("incremental.mode")
-  private IncrementalMode incrementalMode;
+  private IncrementalMode incrementalMode;//增量导入模式,AppendRows 按照行导入,DateLastModified按照最后修改日期增量导入
   // What was the last-imported value of incrementalTestCol?
   @StoredAsProperty("incremental.last.value")
-  private String incrementalLastValue;
+  private String incrementalLastValue;//增量导入后的最后值
 
   // exclude these tables when importing all tables.
   @StoredAsProperty("import.all_tables.exclude")
   private String allTablesExclude;
 
   // HDFS paths for "old" and "new" datasets in merge tool.
-  @StoredAsProperty("merge.old.path") private String mergeOldPath;
-  @StoredAsProperty("merge.new.path") private String mergeNewPath;
+  @StoredAsProperty("merge.old.path") private String mergeOldPath;//合并的老路径
+  @StoredAsProperty("merge.new.path") private String mergeNewPath;//合并的新路径
+    // "key" column for the merge operation.
+  @StoredAsProperty("merge.key.col") private String mergeKeyCol;//哪什么字段进行合并
 
-  // "key" column for the merge operation.
-  @StoredAsProperty("merge.key.col") private String mergeKeyCol;
 
   // Dataset name for mainframe import tool
   @StoredAsProperty("mainframe.input.dataset.name")

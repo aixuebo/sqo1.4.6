@@ -67,29 +67,29 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   // string.
   public static final String CONNECT_STRING_ARG = "connect";
   public static final String CONN_MANAGER_CLASS_NAME =
-      "connection-manager";
-  public static final String CONNECT_PARAM_FILE = "connection-param-file";
+      "connection-manager";//对应class全路径
+  public static final String CONNECT_PARAM_FILE = "connection-param-file";//连接的配置文件
   public static final String DRIVER_ARG = "driver";
   public static final String USERNAME_ARG = "username";
   public static final String PASSWORD_ARG = "password";
-  public static final String PASSWORD_PROMPT_ARG = "P";
+  public static final String PASSWORD_PROMPT_ARG = "P";//从控制台获取密码
   public static final String PASSWORD_PATH_ARG = "password-file";
   public static final String PASSWORD_ALIAS_ARG = "password-alias";
-  public static final String DIRECT_ARG = "direct";
+  public static final String DIRECT_ARG = "direct";//是否使用类似mysql的快速直接导入功能
   public static final String BATCH_ARG = "batch";
-  public static final String TABLE_ARG = "table";
-  public static final String STAGING_TABLE_ARG = "staging-table";
-  public static final String CLEAR_STAGING_TABLE_ARG = "clear-staging-table";
-  public static final String COLUMNS_ARG = "columns";
-  public static final String SPLIT_BY_ARG = "split-by";
+  public static final String TABLE_ARG = "table";//导入什么表
+  public static final String STAGING_TABLE_ARG = "staging-table";//export的时候,可以设置一个中间媒介表
+  public static final String CLEAR_STAGING_TABLE_ARG = "clear-staging-table";//export的时候,可以设置一个中间媒介表,将中间表内容删除
+  public static final String COLUMNS_ARG = "columns";//导入该表的哪些列
+  public static final String SPLIT_BY_ARG = "split-by";//按照什么列进行拆分map任务,默认是按照主键拆分
   public static final String WHERE_ARG = "where";
   public static final String HADOOP_HOME_ARG = "hadoop-home";
   public static final String HADOOP_MAPRED_HOME_ARG = "hadoop-mapred-home";
-  public static final String HIVE_HOME_ARG = "hive-home";
-  public static final String WAREHOUSE_DIR_ARG = "warehouse-dir";
-  public static final String TARGET_DIR_ARG = "target-dir";
-  public static final String APPEND_ARG = "append";
-  public static final String DELETE_ARG = "delete-target-dir";
+  public static final String HIVE_HOME_ARG = "hive-home";//设置hive的home
+  public static final String WAREHOUSE_DIR_ARG = "warehouse-dir";//导入HDFS哪个父目录下
+  public static final String TARGET_DIR_ARG = "target-dir";//存储在hdfs上哪里
+  public static final String APPEND_ARG = "append";//增量导入的追加模式
+  public static final String DELETE_ARG = "delete-target-dir";//是否删除目标数据
   public static final String NULL_STRING = "null-string";
   public static final String INPUT_NULL_STRING = "input-null-string";
   public static final String NULL_NON_STRING = "null-non-string";
@@ -97,14 +97,15 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   public static final String MAP_COLUMN_JAVA = "map-column-java";
   public static final String MAP_COLUMN_HIVE = "map-column-hive";
 
-  public static final String FMT_SEQUENCEFILE_ARG = "as-sequencefile";
-  public static final String FMT_TEXTFILE_ARG = "as-textfile";
-  public static final String FMT_AVRODATAFILE_ARG = "as-avrodatafile";
-  public static final String FMT_PARQUETFILE_ARG = "as-parquetfile";
+  public static final String FMT_SEQUENCEFILE_ARG = "as-sequencefile"; //导入数据最后是序列化文件
+  public static final String FMT_TEXTFILE_ARG = "as-textfile"; //导入数据最后是text文件
+  public static final String FMT_AVRODATAFILE_ARG = "as-avrodatafile"; //导入数据最后是avro文件
+  public static final String FMT_PARQUETFILE_ARG = "as-parquetfile"; //导入数据最后是Parquet文件
+
   public static final String HIVE_IMPORT_ARG = "hive-import";
-  public static final String HIVE_TABLE_ARG = "hive-table";
-  public static final String HIVE_DATABASE_ARG = "hive-database";
-  public static final String HIVE_OVERWRITE_ARG = "hive-overwrite";
+  public static final String HIVE_TABLE_ARG = "hive-table";//hive的表名字
+  public static final String HIVE_DATABASE_ARG = "hive-database";//数据库名字
+  public static final String HIVE_OVERWRITE_ARG = "hive-overwrite";//覆盖hive的数据
   public static final String HIVE_DROP_DELIMS_ARG = "hive-drop-import-delims";
   public static final String HIVE_DELIMS_REPLACEMENT_ARG =
           "hive-delims-replacement";
@@ -123,16 +124,18 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   public static final String HCATALOG_STORAGE_STANZA_ARG =
     "hcatalog-storage-stanza";
   public static final String HCATALOG_HOME_ARG = "hcatalog-home";
-  public static final String MAPREDUCE_JOB_NAME = "mapreduce-job-name";
-  public static final String NUM_MAPPERS_ARG = "num-mappers";
-  public static final String NUM_MAPPERS_SHORT_ARG = "m";
-  public static final String COMPRESS_ARG = "compress";
-  public static final String COMPRESSION_CODEC_ARG = "compression-codec";
-  public static final String COMPRESS_SHORT_ARG = "z";
-  public static final String DIRECT_SPLIT_SIZE_ARG = "direct-split-size";
+  public static final String MAPREDUCE_JOB_NAME = "mapreduce-job-name";//该job的name
+  public static final String NUM_MAPPERS_ARG = "num-mappers";//多少个map任务去执行该job
+  public static final String NUM_MAPPERS_SHORT_ARG = "m";//多少个map任务去执行该job
+
+  public static final String COMPRESS_ARG = "compress";//是否支持压缩
+  public static final String COMPRESS_SHORT_ARG = "z";//是否支持压缩
+  public static final String COMPRESSION_CODEC_ARG = "compression-codec";//压缩方式
+
+  public static final String DIRECT_SPLIT_SIZE_ARG = "direct-split-size";//当direct模式进行导入的时候,每多少个字节进行拆分一次,单位是字节
   public static final String INLINE_LOB_LIMIT_ARG = "inline-lob-limit";
-  public static final String FETCH_SIZE_ARG = "fetch-size";
-  public static final String EXPORT_PATH_ARG = "export-dir";
+  public static final String FETCH_SIZE_ARG = "fetch-size";//设置 statement.setFetchSize(fetchSize);
+  public static final String EXPORT_PATH_ARG = "export-dir";//export的时候hdfs上的输入源目录
   public static final String FIELDS_TERMINATED_BY_ARG = "fields-terminated-by";
   public static final String LINES_TERMINATED_BY_ARG = "lines-terminated-by";
   public static final String OPTIONALLY_ENCLOSED_BY_ARG =
@@ -151,15 +154,16 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   public static final String CODE_OUT_DIR_ARG = "outdir";
   public static final String BIN_OUT_DIR_ARG = "bindir";
   public static final String PACKAGE_NAME_ARG = "package-name";
-  public static final String CLASS_NAME_ARG = "class-name";
-  public static final String JAR_FILE_NAME_ARG = "jar-file";
-  public static final String SQL_QUERY_ARG = "query";
-  public static final String SQL_QUERY_BOUNDARY = "boundary-query";
-  public static final String SQL_QUERY_SHORT_ARG = "e";
-  public static final String VERBOSE_ARG = "verbose";
+  public static final String CLASS_NAME_ARG = "class-name";//指定jar包中要加载的主类
+  public static final String JAR_FILE_NAME_ARG = "jar-file";//指定特殊的jar包文件
+
+  public static final String SQL_QUERY_ARG = "query";//导入的sql
+  public static final String SQL_QUERY_BOUNDARY = "boundary-query";//如果是根据sql导入的,则要设置查询边界sql或者设置SplitColumn,如果map=1,则必须要设置查询边界,如果设置多个map,必须要有split拆分列, 查询边界demo:select min(<split-by>), max(<split-by>) from <table name>
+  public static final String SQL_QUERY_SHORT_ARG = "e";//导入的sql缩写
+  public static final String VERBOSE_ARG = "verbose";//打印更多日志信息
   public static final String HELP_ARG = "help";
-  public static final String UPDATE_KEY_ARG = "update-key";
-  public static final String UPDATE_MODE_ARG = "update-mode";
+  public static final String UPDATE_KEY_ARG = "update-key";//在export的时候 使用哪个字段进行update操作
+  public static final String UPDATE_MODE_ARG = "update-mode";//export的时候,更新形式,仅仅更新存在的行,或者更新存在的行,insert不存在的行,updateonly或者allowinsert
   public static final String CALL_ARG = "call";
   public static final String SKIP_DISTCACHE_ARG = "skip-dist-cache";
   public static final String RELAXED_ISOLATION = "relaxed-isolation";
@@ -173,12 +177,12 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
       "validation-failurehandler";
 
   // Arguments for incremental imports.
-  public static final String INCREMENT_TYPE_ARG = "incremental";
-  public static final String INCREMENT_COL_ARG = "check-column";
-  public static final String INCREMENT_LAST_VAL_ARG = "last-value";
+  public static final String INCREMENT_TYPE_ARG = "incremental";//'append' or 'lastmodified 增量导入类型
+  public static final String INCREMENT_COL_ARG = "check-column";//在什么属性上进行增量处理
+  public static final String INCREMENT_LAST_VAL_ARG = "last-value";//记录增量最后一个值
 
   // Arguments for all table imports.
-  public static final String ALL_TABLE_EXCLUDES_ARG = "exclude-tables";
+  public static final String ALL_TABLE_EXCLUDES_ARG = "exclude-tables";//将一个数据库所有表都导入的时候,要排除一些表的时候使用该字段,table用逗号拆分
 
   // HBase arguments.
   public static final String HBASE_TABLE_ARG = "hbase-table";
@@ -203,8 +207,8 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   public static final String ACCUMULO_PASSWORD_ARG = "accumulo-password";
 
 
-  // Arguments for the saved job management system.
-  public static final String STORAGE_METASTORE_ARG = "meta-connect";
+  // Arguments for the saved job management system.配置job的属性
+  public static final String STORAGE_METASTORE_ARG = "meta-connect";//配置job应该连接哪个meta数据源
   public static final String JOB_CMD_CREATE_ARG = "create";
   public static final String JOB_CMD_DELETE_ARG = "delete";
   public static final String JOB_CMD_EXEC_ARG = "exec";
@@ -212,18 +216,18 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   public static final String JOB_CMD_SHOW_ARG = "show";
 
   // Arguments for the metastore.
-  public static final String METASTORE_SHUTDOWN_ARG = "shutdown";
+  public static final String METASTORE_SHUTDOWN_ARG = "shutdown";//关闭sqoop的metastore服务命令
 
 
-  // Arguments for merging datasets.
-  public static final String NEW_DATASET_ARG = "new-data";
-  public static final String OLD_DATASET_ARG = "onto";
-  public static final String MERGE_KEY_ARG = "merge-key";
+  // Arguments for merging datasets.合并新老数据集
+  public static final String NEW_DATASET_ARG = "new-data";//新数据所在的目录
+  public static final String OLD_DATASET_ARG = "onto";//老数据所在的目录
+  public static final String MERGE_KEY_ARG = "merge-key";//根据哪个属性进行合并
 
   // Reset number of mappers to one if there is no primary key avaliable and
   // split by column is explicitly not provided
 
-  public static final String AUTORESET_TO_ONE_MAPPER = "autoreset-to-one-mapper";
+  public static final String AUTORESET_TO_ONE_MAPPER = "autoreset-to-one-mapper";//import的时候使用,true表示重新设置map的数量,当没有拆分列的时候,不能被拆分了,则如果该属性为true,可以将map设置为1个
 
 
   public BaseSqoopTool() {
@@ -233,7 +237,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
     super(toolName);
   }
 
-  protected ConnManager manager;
+  protected ConnManager manager;//用于hive获取输入源数据库的table的元数据信息
 
   public ConnManager getManager() {
     return manager;
@@ -289,6 +293,8 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
    * @param len the number of elements to check
    * @return true if there are any non-null, non-empty argument strings
    * present.
+   * 如果存在未被承认的参数,则打印一些未被承认的参数,并且返回true
+   * 即true表示参数中有内容,false表示参数都是null
    */
   protected boolean hasUnrecognizedArgs(String [] argv, int offset, int len) {
     if (argv == null) {
@@ -296,21 +302,22 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
     }
 
     boolean unrecognized = false;
-    boolean printedBanner = false;
+    boolean printedBanner = false;//第一个出现的时候,要进行打印banner横幅信息
     for (int i = offset; i < Math.min(argv.length, offset + len); i++) {
-      if (argv[i] != null && argv[i].length() > 0) {
+      if (argv[i] != null && argv[i].length() > 0) {//主要参数不是空,有内容就进行打印处理,并且返回true
         if (!printedBanner) {
           LOG.error("Error parsing arguments for " + getToolName() + ":");
           printedBanner = true;
         }
         LOG.error("Unrecognized argument: " + argv[i]);
-        unrecognized = true;
+        unrecognized = true;//有未被承认的参数,则返回值为true
       }
     }
 
     return unrecognized;
   }
 
+  //如果存在未被承认的参数,则打印一些未被承认的参数,并且返回true
   protected boolean hasUnrecognizedArgs(String [] argv) {
     if (null == argv) {
       return false;
@@ -323,6 +330,12 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
    * If argv contains an entry "--", return an array containing all elements
    * after the "--" separator. Otherwise, return null.
    * @param argv a set of arguments to scan for the subcommand arguments.
+  String[] arr = new String[]{"aa","--","cc","dd","ee","--","hh","ii"};
+  String[] values = test.getSubcommandArgs(arr);
+  for(String value:values){
+  System.out.println(value);
+  }
+  返回值是"cc","dd","ee","--","hh","ii"
    */
   protected String [] getSubcommandArgs(String [] argv) {
     if (null == argv) {
@@ -342,6 +355,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
    * @return RelatedOptions used by job management tools.
    */
   protected RelatedOptions getJobOptions() {
+
     RelatedOptions relatedOpts = new RelatedOptions(
         "Job management arguments");
     relatedOpts.addOption(OptionBuilder.withArgName("jdbc-uri")
@@ -351,7 +365,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
         .create());
 
     // Create an option-group surrounding the operations a user
-    // can perform on jobs.
+    // can perform on jobs.定义一组命令
     OptionGroup group = new OptionGroup();
     group.addOption(OptionBuilder.withArgName("job-id")
         .hasArg()
@@ -397,8 +411,10 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
     return relatedOpts;
   }
 
+
   /**
    * @return RelatedOptions used by most/all Sqoop tools.
+
    */
   protected RelatedOptions getCommonOptions() {
     // Connection args (common)
@@ -414,7 +430,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
     commonOpts.addOption(OptionBuilder.withArgName("properties-file")
         .hasArg().withDescription("Specify connection parameters file")
         .withLongOpt(CONNECT_PARAM_FILE)
-        .create());
+              .create());
     commonOpts.addOption(OptionBuilder.withArgName("class-name")
         .hasArg().withDescription("Manually specify JDBC driver class to use")
         .withLongOpt(DRIVER_ARG)
@@ -474,6 +490,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
    * @param explicitHiveImport true if the user has an explicit --hive-import
    * available, or false if this is implied by the tool.
    * @return options governing interaction with Hive
+   *
    */
   protected RelatedOptions getHiveOptions(boolean explicitHiveImport) {
     RelatedOptions hiveOpts = new RelatedOptions("Hive arguments");
@@ -1641,6 +1658,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
    * Given an array of extra arguments (usually populated via
    * this.extraArguments), determine the offset of the first '--'
    * argument in the list. Return 'extra.length' if there is none.
+   * 查找数组中"--"的位置
    */
   protected int getDashPosition(String [] extra) {
     int dashPos = extra.length;

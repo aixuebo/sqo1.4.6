@@ -30,6 +30,7 @@ import com.cloudera.sqoop.SqoopOptions;
  * Database manager that is connects to a generic JDBC-compliant
  * database; its constructor is parameterized on the JDBC Driver
  * class to load.
+ * 简单的通用获取连接对象,仅仅获取了一个连接器就可以
  */
 public class GenericJdbcManager
     extends com.cloudera.sqoop.manager.SqlManager {
@@ -49,7 +50,7 @@ public class GenericJdbcManager
   @Override
   public Connection getConnection() throws SQLException {
     if (null == this.connection) {
-      this.connection = makeConnection();
+      this.connection = makeConnection();//获取一个连接器
     }
 
     return this.connection;

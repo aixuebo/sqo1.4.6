@@ -22,6 +22,7 @@ import com.cloudera.sqoop.SqoopOptions;
 
 /**
  * @deprecated Moving to use org.apache.sqoop namespace.
+ * export导出到数据库的任务上下文
  */
 public class ExportJobContext
     extends org.apache.sqoop.manager.ExportJobContext {

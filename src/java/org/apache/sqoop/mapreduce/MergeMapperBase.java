@@ -34,6 +34,7 @@ import com.cloudera.sqoop.lib.SqoopRecord;
  * Given a set of SqoopRecord instances which are from a "new" dataset
  * or an "old" dataset, extract a key column from the record and tag
  * each record with a bit specifying whether it is a new or old record.
+ * 对新 老记录进行合并,抽取出关键的key属性对他进行合并
  */
 public class MergeMapperBase<INKEY, INVAL>
     extends Mapper<INKEY, INVAL, Text, MergeRecord> {
@@ -41,19 +42,20 @@ public class MergeMapperBase<INKEY, INVAL>
   public static final Log LOG = LogFactory.getLog(
       MergeMapperBase.class.getName());
 
-  private String keyColName; // name of the key column.
-  private boolean isNew; // true if this split is from the new dataset.
+  private String keyColName; // name of the key column.合并的属性
+  private boolean isNew; // true if this split is from the new dataset. 新数据还是老数据文件
 
   @Override
   protected void setup(Context context)
       throws IOException, InterruptedException {
     Configuration conf = context.getConfiguration();
-    keyColName = conf.get(MergeJob.MERGE_KEY_COL_KEY);
+    keyColName = conf.get(MergeJob.MERGE_KEY_COL_KEY);//获取合并的属性
 
     InputSplit is = context.getInputSplit();
     FileSplit fs = (FileSplit) is;
     Path splitPath = fs.getPath();
 
+    //根据输入源判断是新数据还是老数据文件
     if (splitPath.toString().startsWith(
         conf.get(MergeJob.MERGE_NEW_PATH_KEY))) {
       this.isNew = true;
@@ -70,7 +72,7 @@ public class MergeMapperBase<INKEY, INVAL>
   protected void processRecord(SqoopRecord r, Context c)
       throws IOException, InterruptedException {
     MergeRecord mr = new MergeRecord(r, isNew);
-    Map<String, Object> fieldMap = r.getFieldMap();
+    Map<String, Object> fieldMap = r.getFieldMap();//获取该记录每一个key与对应的value值映射个关系
     if (null == fieldMap) {
       throw new IOException("No field map in record " + r);
     }
@@ -78,7 +80,7 @@ public class MergeMapperBase<INKEY, INVAL>
     if (null == keyObj) {
       throw new IOException("Cannot join values on null key. "
           + "Did you specify a key column that exists?");
-    } else {
+    } else {//key就是合并的主键,value是一整行信息
       c.write(new Text(keyObj.toString()), mr);
     }
   }

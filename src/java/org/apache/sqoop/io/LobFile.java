@@ -74,6 +74,7 @@ import com.cloudera.sqoop.util.RandomHash;
  *
  * The LobFile format is specified at:
  * http://wiki.github.com/cloudera/sqoop/sip-3
+ *
  */
 public final class LobFile {
 

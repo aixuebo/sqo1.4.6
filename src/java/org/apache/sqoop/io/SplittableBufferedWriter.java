@@ -28,6 +28,7 @@ import org.apache.commons.logging.LogFactory;
  * A BufferedWriter implementation that wraps around a SplittingOutputStream
  * and allows splitting of the underlying stream.
  * Splits occur at allowSplit() calls, or newLine() calls.
+ * 对SplittingOutputStream类的一个包装
  */
 public class SplittableBufferedWriter extends BufferedWriter {
 

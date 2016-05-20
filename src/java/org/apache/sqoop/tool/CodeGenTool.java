@@ -39,15 +39,16 @@ import com.cloudera.sqoop.orm.CompilationManager;
 
 /**
  * Tool that generates code from a database schema.
+ * 从数据库的schema元数据信息自动生成java的jar代码
  */
 public class CodeGenTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
   public static final Log LOG = LogFactory.getLog(CodeGenTool.class.getName());
 
-  private List<String> generatedJarFiles;
+  private List<String> generatedJarFiles;//生成的jar文件
 
   public CodeGenTool() {
-    super("codegen");
+    super("codegen");//自动生成java代码的命令
     generatedJarFiles = new ArrayList<String>();
   }
 

@@ -33,6 +33,7 @@ import com.cloudera.sqoop.mapreduce.db.DataDrivenDBInputFormat;
 
 /**
  * Class that runs an import job using mysqldump in the mapper.
+ * 使用mysql的dump命令进行数据导出
  */
 public class MySQLDumpImportJob extends ImportJobBase {
 

@@ -56,6 +56,7 @@ import com.cloudera.sqoop.util.ImportException;
 
 /**
  * Tool that performs database imports to HDFS.
+
  */
 public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
@@ -69,6 +70,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   private boolean allTables;
 
   // store check column type for incremental option
+  //查询该table或者sql中属性与属性对应的类型映射关系
   private int checkColumnType;
 
   // Set classloader for local job runner
@@ -118,6 +120,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
   /**
    * If any classloader was invoked by loadJars, free it here.
+   * 返回上一个classLoader
    */
   private void unloadJars() {
     if (null != this.prevClassLoader) {
@@ -128,6 +131,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
   /**
    * @return true if the supplied options specify an incremental import.
+   * true表示该导入是增量模式的导入
    */
   private boolean isIncremental(SqoopOptions options) {
     return !options.getIncrementalMode().equals(
@@ -139,10 +143,11 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
    * user's state back to the metastore (if this job was run
    * from the metastore). Otherwise, log to the user what data
    * they need to supply next time.
+   * 保存增量导入后的最新状态
    */
   private void saveIncrementalState(SqoopOptions options)
       throws IOException {
-    if (!isIncremental(options)) {
+    if (!isIncremental(options)) {//说明不是增量导入,因此不需要保存增量状态
       return;
     }
 
@@ -185,8 +190,8 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         LOG.warn("Undefined incremental mode: " + incrementalMode);
         break;
       }
-      LOG.info("  --check-column " + options.getIncrementalTestColumn());
-      LOG.info("  --last-value " + options.getIncrementalLastValue());
+      LOG.info("  --check-column " + options.getIncrementalTestColumn());//增量的列
+      LOG.info("  --last-value " + options.getIncrementalLastValue());//增量的最后值
       LOG.info("(Consider saving this with 'sqoop job --create')");
     }
   }
@@ -194,6 +199,10 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   /**
    * Return the max value in the incremental-import test column. This
    * value must be numeric.
+   *
+   * 组织sql
+   * select max(column) from table where xxx
+   * 获取给定sql的最大的数据,该返回值就是一个值
    */
   private Object getMaxColumnId(SqoopOptions options) throws SQLException {
     StringBuilder sb = new StringBuilder();
@@ -203,7 +212,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     sb.append(manager.escapeColName(options.getIncrementalTestColumn()));
     sb.append(") FROM ");
 
-    if (options.getTableName() != null) {
+    if (options.getTableName() != null) {//存在表名
       // Table import
       sb.append(manager.escapeTableName(options.getTableName()));
 
@@ -213,7 +222,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         sb.append(where);
       }
       query = sb.toString();
-    } else {
+    } else {//就是一条纯粹的sql
       // Free form table based import
       sb.append("(");
       sb.append(options.getSqlQuery());
@@ -268,6 +277,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   /**
    * Determine if a column is date/time.
    * @return true if column type is TIMESTAMP, DATE, or TIME.
+   * true表示该属性是时间类型属性
    */
   private boolean isDateTimeColumn(int columnType) {
     return (columnType == Types.TIMESTAMP)
@@ -279,6 +289,8 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
    * Initialize the constraints which set the incremental import range.
    * @return false if an import is not necessary, because the dataset has not
    * changed.
+   * 对增量的导入进行初始化操作,如果初始化失败,则返回false,停止导入
+   * 过程中对增量的信息进行了初始化,比如将sql进行了初始化,只是查询增量部分的sql,同时查询最大值,将本次增量导入后到什么程度,写进参数里面
    */
   private boolean initIncrementalConstraints(SqoopOptions options,
       ImportJobContext context) throws ImportException, IOException {
@@ -287,28 +299,28 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     // to inject in the WHERE clause or $CONDITIONS for a query.
     // Also modify the 'last value' field of the SqoopOptions to
     // specify the current job start time / start row.
-
-    if (!isIncremental(options)) {
+    if (!isIncremental(options)) {//false说明不是增量导入模式,因此直接返回true
       return true;
     }
 
     FileSystem fs = FileSystem.get(options.getConf());
+    //增量导入模式,AppendRows 按照行导入,DateLastModified按照最后修改日期增量导入
     SqoopOptions.IncrementalMode incrementalMode = options.getIncrementalMode();
-    String nextIncrementalValue = null;
+    String nextIncrementalValue = null;//目前该属性的最大值或者当前的时间字符串
 
     Object nextVal;
     switch (incrementalMode) {
-    case AppendRows:
+    case AppendRows://按照行模式进行增量导入
       try {
-        nextVal = getMaxColumnId(options);
-        if (isDateTimeColumn(checkColumnType)) {
+        nextVal = getMaxColumnId(options);//返回该属性的最大值
+        if (isDateTimeColumn(checkColumnType)) {//判断是否是时间类型
           nextIncrementalValue = (nextVal == null) ? null
             : manager.datetimeToQueryString(nextVal.toString(),
-                                            checkColumnType);
+                                            checkColumnType);//将sql的时间类型的结果转换成字符串
         } else if (manager.isCharColumn(checkColumnType)) {
           throw new ImportException("Character column "
             + "(" + options.getIncrementalTestColumn() + ") can not be used "
-            + "to determine which rows to incrementally import.");
+            + "to determine which rows to incrementally import.");//不是整形和时间的,目前是不支持增量的
         } else {
           nextIncrementalValue = (nextVal == null) ? null : nextVal.toString();
         }
@@ -316,16 +328,17 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         throw new IOException(sqlE);
       }
       break;
-    case DateLastModified:
+    case DateLastModified://如果按照最后修改时间增量
       if (options.getMergeKeyCol() == null && !options.isAppendMode()
           && fs.exists(getOutputPath(options, context.getTableName(), false))) {
         throw new ImportException("--" + MERGE_KEY_ARG + " or " + "--" + APPEND_ARG
           + " is required when using --" + this.INCREMENT_TYPE_ARG
           + " lastmodified and the output directory exists.");
       }
+      //查询该table或者sql中属性与属性对应的类型映射关系
       checkColumnType = manager.getColumnTypes(options.getTableName(),
         options.getSqlQuery()).get(options.getIncrementalTestColumn());
-      nextVal = manager.getCurrentDbTimestamp();
+      nextVal = manager.getCurrentDbTimestamp();//获取当前数据库的时间戳
       if (null == nextVal) {
         throw new IOException("Could not get current time from database");
       }
@@ -340,22 +353,28 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     // Build the WHERE clause components that are used to import
     // only this incremental section.
     StringBuilder sb = new StringBuilder();
-    String prevEndpoint = options.getIncrementalLastValue();
+    String prevEndpoint = options.getIncrementalLastValue();//上一次增量更新的属性值
 
+      //该属性是时间类型属性,并且以前是存储了该值,并且存储的值没有用''包裹
     if (isDateTimeColumn(checkColumnType) && null != prevEndpoint
         && !prevEndpoint.startsWith("\'") && !prevEndpoint.endsWith("\'")) {
       // Incremental imports based on date/time should be 'quoted' in
       // ANSI SQL. If the user didn't specify single-quotes, put them
       // around, here.
       prevEndpoint = manager.datetimeToQueryString(prevEndpoint,
-          checkColumnType);
+          checkColumnType);//对以前存储的时间值用''进行包裹起来
     }
 
     String checkColName = manager.escapeColName(
-        options.getIncrementalTestColumn());
+        options.getIncrementalTestColumn());//增量的列
+
+      /**
+       * 组装sql: column > prevEndpoint and  column < nextIncrementalValue AND $CONDITIONS
+       * 如果有where条件,则 and (where参数)
+       */
     LOG.info("Incremental import based on column " + checkColName);
-    if (null != prevEndpoint) {
-      if (prevEndpoint.equals(nextIncrementalValue)) {
+    if (null != prevEndpoint) {//增量以前有值
+      if (prevEndpoint.equals(nextIncrementalValue)) {//两个值相同,说明没有新数据
         LOG.info("No new rows detected since last import.");
         return false;
       }
@@ -397,6 +416,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     if (options.getTableName() != null) {
       // Table based import
+      //如果有where条件,则 and (where参数)
       String prevWhereClause = options.getWhereClause();
       if (null != prevWhereClause) {
         sb.append(" AND (");
@@ -405,6 +425,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       }
 
       String newConstraints = sb.toString();
+      //将最终的where条件重新覆盖掉
       options.setWhereClause(newConstraints);
     } else {
       // Incremental based import
@@ -418,6 +439,8 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     if (null == recordOptions) {
       recordOptions = options;
     }
+
+    //设置最后增量的值
     recordOptions.setIncrementalLastValue(
         (nextVal == null) ? null : nextVal.toString());
 
@@ -426,41 +449,45 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
   /**
    * Merge HDFS output directories
+   * 如果是按照update时间抓去的数据,则要对数据进行合并,因为说明此时是修改操作
    */
   protected void lastModifiedMerge(SqoopOptions options, ImportJobContext context) throws IOException {
     FileSystem fs = FileSystem.get(options.getConf());
-    if (context.getDestination() != null && fs.exists(context.getDestination())) {
-      Path userDestDir = getOutputPath(options, context.getTableName(), false);
-      if (fs.exists(userDestDir)) {
+    if (context.getDestination() != null && fs.exists(context.getDestination())) {//如果目标目录存在
+      Path userDestDir = getOutputPath(options, context.getTableName(), false);//最终目录应该存储在哪里
+      if (fs.exists(userDestDir)) {//如果最终目标存在,则要合并
         String tableClassName = null;
         if (!context.getConnManager().isORMFacilitySelfManaged()) {
           tableClassName =
               new TableClassName(options).getClassForTable(context.getTableName());
         }
-        Path destDir = getOutputPath(options, context.getTableName());
-        options.setExistingJarName(context.getJarFile());
-        options.setClassName(tableClassName);
-        options.setMergeOldPath(userDestDir.toString());
-        options.setMergeNewPath(context.getDestination().toString());
-        // Merge to temporary directory so that original directory remains intact.
-        options.setTargetDir(destDir.toString());
 
-        // Local job tracker needs jars in the classpath.
+        //调用merge合并job,去做合并操作
+        Path destDir = getOutputPath(options, context.getTableName());
+        options.setExistingJarName(context.getJarFile());//设置jar包
+        options.setClassName(tableClassName);//设置执行主类
+        options.setMergeOldPath(userDestDir.toString());//老的路径
+        options.setMergeNewPath(context.getDestination().toString());//新的路径
+        // Merge to temporary directory so that original directory remains intact.
+        options.setTargetDir(destDir.toString());//目标路径
+
+        // Local job tracker needs jars in the classpath.加载jar包
         loadJars(options.getConf(), context.getJarFile(), context.getTableName());
 
+        //执行合并操作
         MergeJob mergeJob = new MergeJob(options);
         if (mergeJob.runMergeJob()) {
           // Rename destination directory to proper location.
           Path tmpDir = getOutputPath(options, context.getTableName());
-          fs.rename(userDestDir, tmpDir);
-          fs.rename(destDir, userDestDir);
-          fs.delete(tmpDir, true);
+          fs.rename(userDestDir, tmpDir);//将原有老的目录替换到temp目录下
+          fs.rename(destDir, userDestDir);//替换最终新的目录
+          fs.delete(tmpDir, true);//删除老的temp版本目录
         } else {
           LOG.error("Merge MapReduce job failed!");
         }
 
         unloadJars();
-      } else {
+      } else {//如果最终目标不存在,则直接剪切就可以了,不需要合并
         fs.rename(context.getDestination(), userDestDir);
       }
     }
@@ -477,22 +504,26 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     // Generate the ORM code for the tables.
     jarFile = codeGenerator.generateORM(options, tableName);
 
+      //获取输出目录
     Path outputPath = getOutputPath(options, tableName);
 
-    // Do the actual import.
+    // Do the actual import.做成导入的上下文对象
     ImportJobContext context = new ImportJobContext(tableName, jarFile,
         options, outputPath);
 
     // If we're doing an incremental import, set up the
     // filtering conditions used to get the latest records.
+    //对增量的导入进行初始化操作,如果初始化失败,则返回false,停止导入
+    //过程中对增量的信息进行了初始化,比如将sql进行了初始化,只是查询增量部分的sql,同时查询最大值,将本次增量导入后到什么程度,写进参数里面
     if (!initIncrementalConstraints(options, context)) {
       return false;
     }
 
-    if (options.isDeleteMode()) {
+    if (options.isDeleteMode()) {//先删除目录
       deleteTargetDir(context);
     }
 
+    //查看是通过表名字导入 还是通过sql导入,已经导入到HDFS上了
     if (null != tableName) {
       manager.importTable(context);
     } else {
@@ -501,13 +532,13 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     if (options.isAppendMode()) {
       AppendUtils app = new AppendUtils(context);
-      app.append();
-    } else if (options.getIncrementalMode() == SqoopOptions.IncrementalMode.DateLastModified) {
+      app.append();//移动导入文件从临时目录到规定的目录中
+    } else if (options.getIncrementalMode() == SqoopOptions.IncrementalMode.DateLastModified) {//如果是按照update时间抓去的数据,则要对数据进行合并,因为说明此时是修改操作
       lastModifiedMerge(options, context);
     }
 
     // If the user wants this table to be in Hive, perform that post-load.
-    if (options.doHiveImport()) {
+    if (options.doHiveImport()) {//要把结果导入到hive中
       // For Parquet file, the import action will create hive table directly via
       // kite. So there is no need to do hive import as a post step again.
       if (options.getFileLayout() != SqoopOptions.FileLayout.ParquetFile) {
@@ -515,11 +546,13 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       }
     }
 
+    //保存此时的增量快照信息
     saveIncrementalState(options);
 
     return true;
   }
 
+  //删除目录
   private void deleteTargetDir(ImportJobContext context) throws IOException {
 
     SqoopOptions options = context.getOptions();
@@ -549,15 +582,16 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   /**
    * @return the output path for the imported files;
    * if importing to hbase, this may return null.
+   * 根据表名,获取输出目录
    */
   private Path getOutputPath(SqoopOptions options, String tableName, boolean temp) {
     // Get output directory
-    String hdfsWarehouseDir = options.getWarehouseDir();
-    String hdfsTargetDir = options.getTargetDir();
+    String hdfsWarehouseDir = options.getWarehouseDir();//其次在该属性对应的路径下输出文件
+    String hdfsTargetDir = options.getTargetDir();//优先在该属性输出目录
     Path outputPath = null;
     if (temp) {
       // Use temporary path, later removed when appending
-      String salt = tableName;
+      String salt = tableName;//设置临时结果存储目录
       if(salt == null && options.getSqlQuery() != null) {
         salt = Integer.toHexString(options.getSqlQuery().hashCode());
       }
@@ -573,7 +607,6 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         outputPath = new Path(tableName);
       }
     }
-
     return outputPath;
   }
 
@@ -636,6 +669,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
    * table or a batch of tables.
    * @return the RelatedOptions that can be used to parse the import
    * arguments.
+   *
    */
   @SuppressWarnings("static-access")
   protected RelatedOptions getImportOptions() {
@@ -645,52 +679,52 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     importOpts.addOption(OptionBuilder
         .withDescription("Use direct import fast path")
         .withLongOpt(DIRECT_ARG)
-        .create());
+        .create());//是否使用类似mysql的快速直接导入功能
 
     if (!allTables) {
       importOpts.addOption(OptionBuilder.withArgName("table-name")
           .hasArg().withDescription("Table to read")
           .withLongOpt(TABLE_ARG)
-          .create());
+          .create());//导入什么表
       importOpts.addOption(OptionBuilder.withArgName("col,col,col...")
           .hasArg().withDescription("Columns to import from table")
           .withLongOpt(COLUMNS_ARG)
-          .create());
+          .create());//导入该表的哪些列
       importOpts.addOption(OptionBuilder.withArgName("column-name")
           .hasArg()
           .withDescription("Column of the table used to split work units")
-          .withLongOpt(SPLIT_BY_ARG)
+          .withLongOpt(SPLIT_BY_ARG)//按照什么列进行拆分map任务,默认是按照主键拆分
           .create());
       importOpts.addOption(OptionBuilder.withArgName("where clause")
           .hasArg().withDescription("WHERE clause to use during import")
-          .withLongOpt(WHERE_ARG)
+          .withLongOpt(WHERE_ARG) //where查询条件
           .create());
       importOpts.addOption(OptionBuilder
           .withDescription("Imports data in append mode")
           .withLongOpt(APPEND_ARG)
-          .create());
+          .create());//增量导入的追加模式
       importOpts.addOption(OptionBuilder
           .withDescription("Imports data in delete mode")
           .withLongOpt(DELETE_ARG)
-          .create());
+          .create());//是否删除目标数据
       importOpts.addOption(OptionBuilder.withArgName("dir")
           .hasArg().withDescription("HDFS plain table destination")
           .withLongOpt(TARGET_DIR_ARG)
-          .create());
+          .create());//存储在hdfs上哪里
       importOpts.addOption(OptionBuilder.withArgName("statement")
           .hasArg()
           .withDescription("Import results of SQL 'statement'")
-          .withLongOpt(SQL_QUERY_ARG)
-          .create(SQL_QUERY_SHORT_ARG));
+          .withLongOpt(SQL_QUERY_ARG)//导入的sql
+          .create(SQL_QUERY_SHORT_ARG));//导入的sql缩写命令
       importOpts.addOption(OptionBuilder.withArgName("statement")
           .hasArg()
           .withDescription("Set boundary query for retrieving max and min"
               + " value of the primary key")
-          .withLongOpt(SQL_QUERY_BOUNDARY)
+          .withLongOpt(SQL_QUERY_BOUNDARY) //如果是根据sql导入的,则要设置查询边界sql或者设置SplitColumn,如果map=1,则必须要设置查询边界,如果设置多个map,必须要有split拆分列, 查询边界demo:select min(<split-by>), max(<split-by>) from <table name>
           .create());
       importOpts.addOption(OptionBuilder.withArgName("column")
           .hasArg().withDescription("Key column to use to join results")
-          .withLongOpt(MERGE_KEY_ARG)
+          .withLongOpt(MERGE_KEY_ARG)//根据哪个属性进行合并
           .create());
 
       addValidationOpts(importOpts);
@@ -698,46 +732,46 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     importOpts.addOption(OptionBuilder.withArgName("dir")
         .hasArg().withDescription("HDFS parent for table destination")
-        .withLongOpt(WAREHOUSE_DIR_ARG)
+        .withLongOpt(WAREHOUSE_DIR_ARG) //导入HDFS哪个父目录下
         .create());
     importOpts.addOption(OptionBuilder
         .withDescription("Imports data to SequenceFiles")
-        .withLongOpt(FMT_SEQUENCEFILE_ARG)
+        .withLongOpt(FMT_SEQUENCEFILE_ARG) //导入数据最后是序列化文件
         .create());
     importOpts.addOption(OptionBuilder
         .withDescription("Imports data as plain text (default)")
-        .withLongOpt(FMT_TEXTFILE_ARG)
+        .withLongOpt(FMT_TEXTFILE_ARG) //导入数据最后是text文件
         .create());
     importOpts.addOption(OptionBuilder
         .withDescription("Imports data to Avro data files")
-        .withLongOpt(FMT_AVRODATAFILE_ARG)
+        .withLongOpt(FMT_AVRODATAFILE_ARG) //导入数据最后是avro文件
         .create());
     importOpts.addOption(OptionBuilder
         .withDescription("Imports data to Parquet files")
-        .withLongOpt(BaseSqoopTool.FMT_PARQUETFILE_ARG)
+        .withLongOpt(BaseSqoopTool.FMT_PARQUETFILE_ARG) //导入数据最后是Parquet文件
         .create());
     importOpts.addOption(OptionBuilder.withArgName("n")
         .hasArg().withDescription("Use 'n' map tasks to import in parallel")
-        .withLongOpt(NUM_MAPPERS_ARG)
-        .create(NUM_MAPPERS_SHORT_ARG));
+        .withLongOpt(NUM_MAPPERS_ARG)//多少个map任务去执行该job
+        .create(NUM_MAPPERS_SHORT_ARG));//多少个map任务去执行该job
     importOpts.addOption(OptionBuilder.withArgName("name")
         .hasArg().withDescription("Set name for generated mapreduce job")
-        .withLongOpt(MAPREDUCE_JOB_NAME)
+        .withLongOpt(MAPREDUCE_JOB_NAME)//该job的name
         .create());
     importOpts.addOption(OptionBuilder
         .withDescription("Enable compression")
-        .withLongOpt(COMPRESS_ARG)
+        .withLongOpt(COMPRESS_ARG) //是否支持压缩
         .create(COMPRESS_SHORT_ARG));
     importOpts.addOption(OptionBuilder.withArgName("codec")
         .hasArg()
         .withDescription("Compression codec to use for import")
-        .withLongOpt(COMPRESSION_CODEC_ARG)
+        .withLongOpt(COMPRESSION_CODEC_ARG) //压缩方式
         .create());
     importOpts.addOption(OptionBuilder.withArgName("n")
         .hasArg()
         .withDescription("Split the input stream every 'n' bytes "
         + "when importing in direct mode")
-        .withLongOpt(DIRECT_SPLIT_SIZE_ARG)
+        .withLongOpt(DIRECT_SPLIT_SIZE_ARG) //当direct模式进行导入的时候,每多少个字节进行拆分一次,单位是字节
         .create());
     importOpts.addOption(OptionBuilder.withArgName("n")
         .hasArg()
@@ -748,17 +782,18 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         .hasArg()
         .withDescription("Set number 'n' of rows to fetch from the "
         + "database when more rows are needed")
-        .withLongOpt(FETCH_SIZE_ARG)
+        .withLongOpt(FETCH_SIZE_ARG)//设置 statement.setFetchSize(fetchSize);
         .create());
     importOpts.addOption(OptionBuilder.withArgName("reset-mappers")
       .withDescription("Reset the number of mappers to one mapper if no split key available")
-      .withLongOpt(AUTORESET_TO_ONE_MAPPER)
+      .withLongOpt(AUTORESET_TO_ONE_MAPPER)//true表示重新设置map的数量,当没有拆分列的时候,不能被拆分了,则如果该属性为true,可以将map设置为1个
       .create());
     return importOpts;
   }
 
   /**
    * Return options for incremental import.
+   * 增量导入cli
    */
   protected RelatedOptions getIncrementalOptions() {
     RelatedOptions incrementalOpts =
@@ -768,17 +803,17 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         .hasArg()
         .withDescription(
         "Define an incremental import of type 'append' or 'lastmodified'")
-        .withLongOpt(INCREMENT_TYPE_ARG)
+        .withLongOpt(INCREMENT_TYPE_ARG) //append' or 'lastmodified 增量导入类型
         .create());
     incrementalOpts.addOption(OptionBuilder.withArgName("column")
         .hasArg()
         .withDescription("Source column to check for incremental change")
-        .withLongOpt(INCREMENT_COL_ARG)
+        .withLongOpt(INCREMENT_COL_ARG) //在什么属性上进行增量处理
         .create());
     incrementalOpts.addOption(OptionBuilder.withArgName("value")
         .hasArg()
         .withDescription("Last imported value in the incremental check column")
-        .withLongOpt(INCREMENT_LAST_VAL_ARG)
+        .withLongOpt(INCREMENT_LAST_VAL_ARG) //记录增量最后一个值
         .create());
 
     return incrementalOpts;
@@ -788,10 +823,10 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   /** Configure the command-line arguments we expect to receive */
   public void configureOptions(ToolOptions toolOptions) {
 
-    toolOptions.addUniqueOptions(getCommonOptions());
-    toolOptions.addUniqueOptions(getImportOptions());
+    toolOptions.addUniqueOptions(getCommonOptions());//设置公共的配置信息
+    toolOptions.addUniqueOptions(getImportOptions());//设置import导入的配置信息
     if (!allTables) {
-      toolOptions.addUniqueOptions(getIncrementalOptions());
+      toolOptions.addUniqueOptions(getIncrementalOptions());//设置增量的导入信息
     }
     toolOptions.addUniqueOptions(getOutputFormatOptions());
     toolOptions.addUniqueOptions(getInputFormatOptions());
@@ -834,8 +869,8 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
   private void applyIncrementalOptions(CommandLine in, SqoopOptions out)
       throws InvalidOptionsException  {
-    if (in.hasOption(INCREMENT_TYPE_ARG)) {
-      String incrementalTypeStr = in.getOptionValue(INCREMENT_TYPE_ARG);
+    if (in.hasOption(INCREMENT_TYPE_ARG)) {//是否有增量配置
+      String incrementalTypeStr = in.getOptionValue(INCREMENT_TYPE_ARG);//增量类型
       if ("append".equals(incrementalTypeStr)) {
         out.setIncrementalMode(SqoopOptions.IncrementalMode.AppendRows);
         // This argument implies ability to append to the same directory.
@@ -849,10 +884,12 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       }
     }
 
+      //设置增量列
     if (in.hasOption(INCREMENT_COL_ARG)) {
       out.setIncrementalTestColumn(in.getOptionValue(INCREMENT_COL_ARG));
     }
 
+      //设置增量属性的value值
     if (in.hasOption(INCREMENT_LAST_VAL_ARG)) {
       out.setIncrementalLastValue(in.getOptionValue(INCREMENT_LAST_VAL_ARG));
     }

@@ -28,6 +28,7 @@ import com.cloudera.sqoop.cli.ToolOptions;
 
 /**
  * Tool that lists available databases on a server.
+ * 查询所有的数据库集合
  */
 public class ListDatabasesTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 

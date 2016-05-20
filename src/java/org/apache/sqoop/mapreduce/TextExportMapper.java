@@ -35,6 +35,7 @@ import org.apache.commons.logging.LogFactory;
  * Converts an input record from a string representation to a parsed Sqoop
  * record and emits that DBWritable to the OutputFormat for writeback to the
  * database.
+ * hdfs上存储的是文本文件,将该文本文件插入到数据库中
  */
 public class TextExportMapper
     extends AutoProgressMapper<LongWritable, Text, SqoopRecord, NullWritable> {
