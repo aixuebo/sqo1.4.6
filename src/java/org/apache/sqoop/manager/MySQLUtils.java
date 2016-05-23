@@ -47,8 +47,8 @@ public final class MySQLUtils {
 
   public static final Log LOG = LogFactory.getLog(MySQLUtils.class.getName());
 
-  public static final String MYSQL_DUMP_CMD = "mysqldump";//mysql的dump命令
-  public static final String MYSQL_IMPORT_CMD = "mysqlimport";//mysql的import命令
+  public static final String MYSQL_DUMP_CMD = "mysqldump";//mysql的dump命令 mysqldump
+  public static final String MYSQL_IMPORT_CMD = "mysqlimport";//mysql的import命令mysqlimport
 
   public static final String OUTPUT_FIELD_DELIM_KEY =
       DelimiterSet.OUTPUT_FIELD_DELIM_KEY;
@@ -64,9 +64,10 @@ public final class MySQLUtils {
   public static final String TABLE_NAME_KEY =
       ConfigurationHelper.getDbInputTableNameProperty();
   public static final String CONNECT_STRING_KEY =
-      ConfigurationHelper.getDbUrlProperty();
+      ConfigurationHelper.getDbUrlProperty();//mysql连接串
   public static final String USERNAME_KEY =
       ConfigurationHelper.getDbUsernameProperty();
+
   public static final String WHERE_CLAUSE_KEY =
       ConfigurationHelper.getDbInputConditionsProperty();
 

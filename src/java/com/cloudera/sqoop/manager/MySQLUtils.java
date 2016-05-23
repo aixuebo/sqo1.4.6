@@ -30,9 +30,9 @@ public final class MySQLUtils {
   }
 
   public static final String MYSQL_DUMP_CMD =
-      org.apache.sqoop.manager.MySQLUtils.MYSQL_DUMP_CMD;
+      org.apache.sqoop.manager.MySQLUtils.MYSQL_DUMP_CMD;//mysql的dump命令 mysqldump
   public static final String MYSQL_IMPORT_CMD =
-      org.apache.sqoop.manager.MySQLUtils.MYSQL_IMPORT_CMD;
+      org.apache.sqoop.manager.MySQLUtils.MYSQL_IMPORT_CMD;//mysql的import命令mysqlimport
   public static final String OUTPUT_FIELD_DELIM_KEY =
       org.apache.sqoop.manager.MySQLUtils.OUTPUT_FIELD_DELIM_KEY;
   public static final String OUTPUT_RECORD_DELIM_KEY =
@@ -45,10 +45,12 @@ public final class MySQLUtils {
       org.apache.sqoop.manager.MySQLUtils.OUTPUT_ENCLOSE_REQUIRED_KEY;
   public static final String TABLE_NAME_KEY =
       org.apache.sqoop.manager.MySQLUtils.TABLE_NAME_KEY;
+
   public static final String CONNECT_STRING_KEY =
-      org.apache.sqoop.manager.MySQLUtils.CONNECT_STRING_KEY;
+      org.apache.sqoop.manager.MySQLUtils.CONNECT_STRING_KEY;//mysql连接串
   public static final String USERNAME_KEY =
       org.apache.sqoop.manager.MySQLUtils.USERNAME_KEY;
+
   public static final String WHERE_CLAUSE_KEY =
       org.apache.sqoop.manager.MySQLUtils.WHERE_CLAUSE_KEY;
   public static final String EXTRA_ARGS_KEY =

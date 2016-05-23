@@ -60,6 +60,7 @@ public abstract class SqoopRecord implements Cloneable, DBWritable,
    * Inserts the data in this object into the PreparedStatement, starting
    * at parameter 'offset'.
    * @return the number of fields written to the statement.
+   * 为预编译的sql中问号赋值,从第offset开始的问号开始赋值,一直赋值下去
    */
   public abstract int write(PreparedStatement stmt, int offset)
       throws SQLException;

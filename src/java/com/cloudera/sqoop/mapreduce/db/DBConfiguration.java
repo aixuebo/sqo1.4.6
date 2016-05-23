@@ -45,7 +45,7 @@ public class DBConfiguration
 
   /** JDBC Database access URL. */
   public static final String URL_PROPERTY =
-      org.apache.sqoop.mapreduce.db.DBConfiguration.URL_PROPERTY;
+      org.apache.sqoop.mapreduce.db.DBConfiguration.URL_PROPERTY;//数据库连接串
 
   /** User name to access the database. */
   public static final String USERNAME_PROPERTY =

@@ -20,18 +20,20 @@ package com.cloudera.sqoop.mapreduce;
 
 /**
  * @deprecated Moving to use org.apache.sqoop namespace.
+ * map方法基础上有一个单独的线程,定期去报道该任务的执行进度情况
  */
 public class AutoProgressMapper<KEYIN, VALIN, KEYOUT, VALOUT>
     extends org.apache.sqoop.mapreduce.AutoProgressMapper
     <KEYIN, VALIN, KEYOUT, VALOUT> {
 
   public static final String MAX_PROGRESS_PERIOD_KEY =
-      org.apache.sqoop.mapreduce.AutoProgressMapper.MAX_PROGRESS_PERIOD_KEY;
+      org.apache.sqoop.mapreduce.AutoProgressMapper.MAX_PROGRESS_PERIOD_KEY;//最多报道多久后,就不再进行报道了,线程单独退出
   public static final String SLEEP_INTERVAL_KEY =
-      org.apache.sqoop.mapreduce.AutoProgressMapper.SLEEP_INTERVAL_KEY;
+      org.apache.sqoop.mapreduce.AutoProgressMapper.SLEEP_INTERVAL_KEY;//每一次报道后睡眠时间
   public static final String REPORT_INTERVAL_KEY =
-      org.apache.sqoop.mapreduce.AutoProgressMapper.REPORT_INTERVAL_KEY;
+      org.apache.sqoop.mapreduce.AutoProgressMapper.REPORT_INTERVAL_KEY;/报道时间间隔
 
+  //上面三个属性的默认值
   public static final int DEFAULT_SLEEP_INTERVAL =
       org.apache.sqoop.mapreduce.AutoProgressMapper.DEFAULT_SLEEP_INTERVAL;
   public static final int DEFAULT_REPORT_INTERVAL =
