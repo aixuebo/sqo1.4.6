@@ -61,7 +61,7 @@ public class DBConfiguration {
     "mapreduce.jdbc.driver.class";
 
   /** JDBC Database access URL. */
-  public static final String URL_PROPERTY = "mapreduce.jdbc.url";
+  public static final String URL_PROPERTY = "mapreduce.jdbc.url";//数据库连接串
 
   /** User name to access the database. */
   public static final String USERNAME_PROPERTY = "mapreduce.jdbc.username";
@@ -90,11 +90,15 @@ public class DBConfiguration {
   public static final String INPUT_CONDITIONS_PROPERTY =
     "mapreduce.jdbc.input.conditions";
 
-  /** ORDER BY clause in the input SELECT statement. */
+  /** ORDER BY clause in the input SELECT statement.
+   * order by后面的字符串,即按照哪些排序以及倒序还是正序
+   **/
   public static final String INPUT_ORDER_BY_PROPERTY =
     "mapreduce.jdbc.input.orderby";
 
-  /** Whole input query, exluding LIMIT...OFFSET. */
+  /** Whole input query, exluding LIMIT...OFFSET.
+   * 输入的查询sql,不包含limit这样的sql
+   **/
   public static final String INPUT_QUERY = "mapreduce.jdbc.input.query";
 
   /** Input query to get the count of records. */
@@ -105,7 +109,9 @@ public class DBConfiguration {
   public static final String INPUT_BOUNDING_QUERY =
       "mapred.jdbc.input.bounding.query";
 
-  /** Class name implementing DBWritable which will hold input tuples. */
+  /** Class name implementing DBWritable which will hold input tuples.
+   * 数据库表对应的java对象,该对象是可以将一个数据库表的一行记录转换成一个实体对象的类
+   **/
   public static final String INPUT_CLASS_PROPERTY =
     "mapreduce.jdbc.input.class";
 

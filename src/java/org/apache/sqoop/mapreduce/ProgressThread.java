@@ -25,6 +25,7 @@ import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 
 /**
   * Run the task process for auto-progress tasks.
+  * 后台自动定期报答该task运行的进度信息
   */
 public class ProgressThread extends Thread {
 
@@ -117,12 +118,12 @@ public class ProgressThread extends Thread {
   }
 
   public void run() {
-    this.lastReportMillis = System.currentTimeMillis();
-    this.startTimeMillis = this.lastReportMillis;
+    this.lastReportMillis = System.currentTimeMillis();//当前时间
+    this.startTimeMillis = this.lastReportMillis;//上一次报道时间
 
-    final long MAX_PROGRESS = this.maxProgressPeriod;
-    final long REPORT_INTERVAL = this.reportInterval;
-    final long SLEEP_INTERVAL = this.sleepInterval;
+    final long MAX_PROGRESS = this.maxProgressPeriod;//最大时间,超过该时间,则不再进行报道,线程停止
+    final long REPORT_INTERVAL = this.reportInterval;//报道间隔
+    final long SLEEP_INTERVAL = this.sleepInterval;//报道后至少睡眠多久
 
     // In a loop:
     //   * Check that we haven't run for too long (maxProgressPeriod).
@@ -131,18 +132,18 @@ public class ProgressThread extends Thread {
     //   * Sleep for a bit.
     //   * If the parent thread has signaled for exit, do so.
     while (this.keepGoing) {
-      long curTimeMillis = System.currentTimeMillis();
+      long curTimeMillis = System.currentTimeMillis();//当前时间
 
       //超时了,则退出
       if (MAX_PROGRESS != 0
-          && curTimeMillis - this.startTimeMillis > MAX_PROGRESS) {
+          && curTimeMillis - this.startTimeMillis > MAX_PROGRESS) {//超过该时间,则不再进行报道,线程停止
         this.keepGoing = false;
         log.info("Auto-progress thread exiting after " + MAX_PROGRESS
                  + " ms.");
         break;
       }
 
-      if (curTimeMillis - this.lastReportMillis > REPORT_INTERVAL) {
+      if (curTimeMillis - this.lastReportMillis > REPORT_INTERVAL) {//超过时间报道间隔,则进行报道信息
         // It's been a full report interval -- claim progress.
         log.debug("Auto-progress thread reporting progress");
         this.context.progress();

@@ -37,6 +37,8 @@ import com.cloudera.sqoop.mapreduce.db.IntegerSplitter;
  * Implement DBSplitter over date/time values.
  * Make use of logic from IntegerSplitter, since date/time are just longs
  * in Java.
+ * 详细解释查看IntegerSplitter类和DBSplitter类注释
+ * 对时间类型的属性进行查询操作
  */
 public class DateSplitter extends IntegerSplitter {
 
@@ -49,18 +51,18 @@ public class DateSplitter extends IntegerSplitter {
     long maxVal;
 
     int sqlDataType = results.getMetaData().getColumnType(1);
-    minVal = resultSetColToLong(results, 1, sqlDataType);
-    maxVal = resultSetColToLong(results, 2, sqlDataType);
+    minVal = resultSetColToLong(results, 1, sqlDataType);//设置最小值
+    maxVal = resultSetColToLong(results, 2, sqlDataType);//设置最大值
 
     String lowClausePrefix = colName + " >= ";
     String highClausePrefix = colName + " < ";
 
-    int numSplits = ConfigurationHelper.getConfNumMaps(conf);
+    int numSplits = ConfigurationHelper.getConfNumMaps(conf);//多少个map任务
     if (numSplits < 1) {
       numSplits = 1;
     }
 
-    if (minVal == Long.MIN_VALUE && maxVal == Long.MIN_VALUE) {
+    if (minVal == Long.MIN_VALUE && maxVal == Long.MIN_VALUE) {//针对is null的查询
       // The range of acceptable dates is NULL to NULL. Just create a single
       // split.
       List<InputSplit> splits = new ArrayList<InputSplit>();
@@ -70,10 +72,10 @@ public class DateSplitter extends IntegerSplitter {
     }
 
     // Gather the split point integers
-    List<Long> splitPoints = split(numSplits, minVal, maxVal);
+    List<Long> splitPoints = split(numSplits, minVal, maxVal);//进行拆分,返回区间值
     List<InputSplit> splits = new ArrayList<InputSplit>();
 
-    // Turn the split points into a set of intervals.
+    // Turn the split points into a set of intervals.针对区间值进行组装split操作
     long start = splitPoints.get(0);
     Date startDate = longToDate(start, sqlDataType);
     if (sqlDataType == Types.TIMESTAMP) {
@@ -119,7 +121,7 @@ public class DateSplitter extends IntegerSplitter {
       startDate = endDate;
     }
 
-    if (minVal == Long.MIN_VALUE || maxVal == Long.MIN_VALUE) {
+    if (minVal == Long.MIN_VALUE || maxVal == Long.MIN_VALUE) {//考虑极限情况,对is null进行查询
       // Add an extra split to handle the null case that we saw.
       splits.add(new DataDrivenDBInputFormat.DataDrivenDBInputSplit(
           colName + " IS NULL", colName + " IS NULL"));
@@ -134,6 +136,7 @@ public class DateSplitter extends IntegerSplitter {
       Long.MIN_VALUE.  This will cause a special split to be generated for the
       NULL case, but may also cause poorly-balanced splits if most of the
       actual dates are positive time since the epoch, etc.
+   将时间类型的值转换成long类型的时间戳
     */
   private long resultSetColToLong(ResultSet rs, int colNum, int sqlDataType)
       throws SQLException {
@@ -156,7 +159,9 @@ public class DateSplitter extends IntegerSplitter {
     }
   }
 
-  /**  Parse the long-valued timestamp into the appropriate SQL date type. */
+  /**  Parse the long-valued timestamp into the appropriate SQL date type.
+   *  将时间类型的值转换成Date对象
+   **/
   private Date longToDate(long val, int sqlDataType) {
     switch (sqlDataType) {
     case Types.DATE:
@@ -176,6 +181,7 @@ public class DateSplitter extends IntegerSplitter {
    * @param d the date to format.
    * @return the string representing this date in SQL with any appropriate
    * quotation characters, etc.
+   * 对时间类型转换成字符串
    */
   protected String dateToString(Date d) {
     return "'" + d.toString() + "'";

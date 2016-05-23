@@ -27,20 +27,21 @@ import com.cloudera.sqoop.mapreduce.MySQLExportMapper;
 /**
  * mysqlimport-based exporter which accepts lines of text from files
  * in HDFS to emit to the database.
+ * 使用mysql的import快速导入功能,将数据导入到mysql中的map处理类
  */
 public class MySQLTextExportMapper
     extends MySQLExportMapper<LongWritable, Text> {
 
   // End-of-record delimiter.
-  private String recordEndStr;
+  private String recordEndStr;//每一行的拆分符号,默认是\n
 
   @Override
   protected void setup(Context context) {
     super.setup(context);
 
     char recordDelim = (char) conf.getInt(MySQLUtils.OUTPUT_RECORD_DELIM_KEY,
-        (int) '\n');
-    this.recordEndStr = "" + recordDelim;
+        (int) '\n');//每一行的拆分符号,默认是\n
+    this.recordEndStr = "" + recordDelim;//将其改成字符串形式,而不是char形式
   }
 
   /**
@@ -48,11 +49,13 @@ public class MySQLTextExportMapper
    * database.
    *
    * Expects one delimited text record as the 'val'; ignores the key.
+   * 导入直接到mysql中,不需要输出到reduce里面,因此没有看到方法里面有输出方法
    */
   @Override
   public void map(LongWritable key, Text val, Context context)
       throws IOException, InterruptedException {
 
+    //将一行已经格式化成mysql import可以是别的文本导入到mysql中
     writeRecord(val.toString(), this.recordEndStr);
 
     // We don't emit anything to the OutputCollector because we wrote

@@ -70,6 +70,8 @@ import java.sql.SQLException;
  *   }
  * }
  * </pre></p>
+ *
+ * 接口,该接口是与数据库打交道
  */
 public interface DBWritable {
 
@@ -77,6 +79,7 @@ public interface DBWritable {
    * Sets the fields of the object in the {@link PreparedStatement}.
    * @param statement the statement that the fields are put into.
    * @throws SQLException
+   * 如何将HDFS上的一条数据写入到预处理器中,然后刷新到数据库中的过程
    */
   void write(PreparedStatement statement) throws SQLException;
 
@@ -84,6 +87,7 @@ public interface DBWritable {
    * Reads the fields of the object from the {@link ResultSet}.
    * @param resultSet the {@link ResultSet} to get the fields from.
    * @throws SQLException
+   * 数据库查询出来的一条结果集,如何转换成一个对象
    */
   void readFields(ResultSet resultSet) throws SQLException;
 }

@@ -40,6 +40,8 @@ import com.cloudera.sqoop.lib.SqoopRecord;
  * up SQL commands which should be executed in a separate thread after
  * enough commands are created.
  *
+ * 缓冲一组RecordWriter集合,单独的线程进行批量提交到数据库中
+ *
  * This supports a configurable "spill threshold" at which
  * point intermediate transactions are committed.
  *
@@ -49,11 +51,14 @@ import com.cloudera.sqoop.lib.SqoopRecord;
  *
  * Clients of this OutputFormat must implement getRecordWriter(); the
  * returned RecordWriter is intended to subclass AsyncSqlRecordWriter.
+ *
  */
 public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
     extends OutputFormat<K, V> {
 
-  /** conf key: number of rows to export per INSERT statement. */
+  /** conf key: number of rows to export per INSERT statement.
+   * 每一个insert语句有多少行记录被导入
+   **/
   public static final String RECORDS_PER_STATEMENT_KEY =
       "sqoop.export.records.per.statement";
 
@@ -61,6 +66,8 @@ public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
    * If this is set to -1, then a single transaction will be used
    * per task. Note that each statement may encompass multiple
    * rows, depending on the value of sqoop.export.records.per.statement.
+   * 一个事物是多少个insert语句,如果是-1,表示整个task用一个事物处理。
+   * 注意一个insert本身就已经包含了多个行被插入了
    */
   public static final String STATEMENTS_PER_TRANSACTION_KEY =
       "sqoop.export.statements.per.transaction";
@@ -68,12 +75,14 @@ public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
   /**
    * Default number of records to put in an INSERT statement or
    * other batched update statement.
+   * 默认一个insert插入100行
    */
   public static final int DEFAULT_RECORDS_PER_STATEMENT = 100;
 
   /**
    * Default number of statements to execute before committing the
    * current transaction.
+   * 100个insert是一个事物,即默认100*100=1万个记录是一个事物
    */
   public static final int DEFAULT_STATEMENTS_PER_TRANSACTION = 100;
 
@@ -81,11 +90,13 @@ public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
    * Value for STATEMENTS_PER_TRANSACTION_KEY signifying that we should
    * not commit until the RecordWriter is being closed, regardless of
    * the number of statements we execute.
+   * 直到RecordWriter被关闭,我们在提交事物
    */
   public static final int UNLIMITED_STATEMENTS_PER_TRANSACTION = -1;
 
   private static final Log LOG = LogFactory.getLog(AsyncSqlOutputFormat.class);
 
+  //该任务的校验检查
   @Override
   /** {@inheritDoc} */
   public void checkOutputSpecs(JobContext context)
@@ -105,17 +116,20 @@ public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
    * AsyncDBOperation objects are immutable.
    * They MAY contain a statement which should be executed. The
    * statement may also be null.
-   *
+   * 代码一个数据库的更新操作,使用后台线程异步处理
+   * 他们执行的时候可能包含一个sql语法块,该语法块也可能是null
    * They may also set 'commitAndClose' to true. If true, then the
    * executor of this operation should commit the current
    * transaction, even if stmt is null, and then stop the executor
    * thread.
+   * 也可以设置属性commitAndClose是true,则执行这个语法块后,事物就会被提交,
+   * 如果预处理器是null,则停止该执行线程
    */
   public static class AsyncDBOperation {
-    private final PreparedStatement stmt;
-    private final boolean isBatch;
-    private final boolean commit;
-    private final boolean stopThread;
+    private final PreparedStatement stmt;//预处理器
+    private final boolean isBatch;//是否是批量处理
+    private final boolean commit;//是否提交,true表示每一个语法块都会被提交到数据库,即会立刻提交到数据库
+    private final boolean stopThread;//是否停止该线程
 
     @Deprecated
     /** Do not use AsyncDBOperation(PreparedStatement s, boolean
@@ -178,24 +192,25 @@ public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
   /**
    * A thread that runs the database interactions asynchronously
    * from the OutputCollector.
+   * 一个线程异步的去与数据库交互
    */
   public static class AsyncSqlExecThread extends Thread {
 
-    private final Connection conn; // The connection to the database.
-    private SQLException err; // Error from a previously-run statement.
+    private final Connection conn; // The connection to the database. 数据库连接器
+    private SQLException err; // Error from a previously-run statement. 一个异常对象
 
-    // How we receive database operations from the RecordWriter.
+    // How we receive database operations from the RecordWriter.我们从RecordWriter中获取的异步操作队列
     private SynchronousQueue<AsyncDBOperation> opsQueue;
 
-    protected int curNumStatements; // statements executed thus far in the tx.
-    protected final int stmtsPerTx;  // statements per transaction.
+    protected int curNumStatements; // statements executed thus far in the tx.提交一个事物之前有多少个sql语法块被执行了
+    protected final int stmtsPerTx;  // statements per transaction.每一个事物要执行多少个sql语法块
 
     /**
      * Create a new update thread that interacts with the database.
      * @param conn the connection to use. This must only be used by this
      * thread.
      * @param stmtsPerTx the number of statements to execute before committing
-     * the current transaction.
+     * the current transaction.每一个事物要执行多少个sql语法块
      */
     public AsyncSqlExecThread(Connection conn, int stmtsPerTx) {
       this.conn = conn;
@@ -208,7 +223,7 @@ public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
       while (true) {
         AsyncDBOperation op = null;
         try {
-          op = opsQueue.take();
+          op = opsQueue.take();//从队列获取一个元素
         } catch (InterruptedException ie) {
           LOG.warn("Interrupted retrieving from operation queue: "
               + StringUtils.stringifyException(ie));
@@ -224,19 +239,21 @@ public abstract class AsyncSqlOutputFormat<K extends SqoopRecord, V>
         PreparedStatement stmt = op.getStatement();
         // Synchronize on the connection to ensure it does not conflict
         // with the prepareStatement() call in the main thread.
+        //连接器要同步,确保不会冲突
         synchronized (conn) {
           try {
             if (null != stmt) {
-              if (op.execAsBatch()) {
+              if (op.execAsBatch()) {//执行批处理
                 stmt.executeBatch();
-              } else {
+              } else {//单独执行
                 stmt.execute();
               }
               stmt.close();
               stmt = null;
-              this.curNumStatements++;
+              this.curNumStatements++;//累加执行了多少个sql了
             }
 
+            //如果立刻提交到数据库 或者 已经到达了一个事物允许的批处理上线,则进行提交到数据库的处理,重置累加sql为0
             if (op.requiresCommit() || (curNumStatements >= stmtsPerTx
                 && stmtsPerTx != UNLIMITED_STATEMENTS_PER_TRANSACTION)) {
               LOG.debug("Committing transaction of " + curNumStatements

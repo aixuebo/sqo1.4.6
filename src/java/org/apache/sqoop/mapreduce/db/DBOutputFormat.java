@@ -45,6 +45,8 @@ import org.apache.sqoop.util.LoggingUtils;
  * {@link DBOutputFormat} accepts &lt;key,value&gt; pairs, where
  * key has a type extending DBWritable. Returned {@link RecordWriter}
  * writes <b>only the key</b> to the database with a batch SQL query.
+ * 将HDFS上的数据,写入到table中
+ * value就是参与的数据库table对应的java序列化对象
  *
  */
 public class DBOutputFormat<K extends DBWritable, V>
@@ -69,6 +71,7 @@ public class DBOutputFormat<K extends DBWritable, V>
    * @param fieldNames
    *          the fields to insert into. If field names are unknown, supply an
    *          array of nulls.
+   *  最终产生的sql:insert into table  (column,column,column) values(?,?,?);
    */
   public String constructQuery(String table, String[] fieldNames) {
     if (fieldNames == null) {
@@ -101,6 +104,7 @@ public class DBOutputFormat<K extends DBWritable, V>
     return query.toString();
   }
 
+  //将该task上要执行的hdfs上得文件写入到数据库中
   @Override
   /** {@inheritDoc} */
   public RecordWriter<K, V> getRecordWriter(TaskAttemptContext context)
@@ -118,9 +122,9 @@ public class DBOutputFormat<K extends DBWritable, V>
       PreparedStatement statement = null;
 
       statement = connection.prepareStatement(
-                    constructQuery(tableName, fieldNames));
+                    constructQuery(tableName, fieldNames));//创建插入sql语句
       return new com.cloudera.sqoop.mapreduce.db.DBOutputFormat.DBRecordWriter(
-                     connection, statement);
+                     connection, statement);//创建真正执行插入sql的任务
     } catch (Exception ex) {
       throw new IOException(ex);
     }
@@ -133,6 +137,7 @@ public class DBOutputFormat<K extends DBWritable, V>
    * @param job The job
    * @param tableName The table to insert data into
    * @param fieldNames The field names in the table.
+   * 设置一些job信息,插入什么数据库表,什么字段等信息
    */
   public static void setOutput(Job job, String tableName,
       String... fieldNames) throws IOException {
@@ -176,12 +181,13 @@ public class DBOutputFormat<K extends DBWritable, V>
 
   /**
    * A RecordWriter that writes the reduce output to a SQL table.
+   * 真正去将一行hdfs上的内容写入到sql中的逻辑
    */
   public static class DBRecordWriter<K extends DBWritable, V>
       extends RecordWriter<K, V> {
 
     private Connection connection;
-    private PreparedStatement statement;
+    private PreparedStatement statement;//这个里面已经有了insert需要的sql信息
 
     public DBRecordWriter() throws SQLException {
     }
@@ -228,6 +234,7 @@ public class DBOutputFormat<K extends DBWritable, V>
     /** {@inheritDoc} */
     public void write(K key, V value) throws IOException {
       try {
+        //去填充预处理器上执行的问号位置数据
         key.write(statement);
         statement.addBatch();
       } catch (SQLException e) {

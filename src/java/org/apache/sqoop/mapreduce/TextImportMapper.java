@@ -31,6 +31,7 @@ import com.cloudera.sqoop.mapreduce.AutoProgressMapper;
 
 /**
  * Imports records by transforming them to strings for a plain-text flat file.
+ * 将数据库提取出来的SqoopRecord对象转换成Text存储到hdfs上
  */
 public class TextImportMapper
     extends AutoProgressMapper<LongWritable, SqoopRecord, Text, NullWritable> {
@@ -54,11 +55,12 @@ public class TextImportMapper
 
     try {
       // Loading of LOBs was delayed until we have a Context.
-      val.loadLargeObjects(lobLoader);
+      val.loadLargeObjects(lobLoader);//懒加载,只有遇见LOB对象的时候才会被加载
     } catch (SQLException sqlE) {
       throw new IOException(sqlE);
     }
 
+    //将数据库提取出来的SqoopRecord对象转换成Text存储到hdfs上
     outkey.set(val.toString());
     context.write(outkey, NullWritable.get());
   }

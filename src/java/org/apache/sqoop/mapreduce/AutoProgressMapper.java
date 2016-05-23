@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * Identity mapper that continuously reports progress via a background thread.
+ * map方法基础上有一个单独的线程,定期去报道该任务的执行进度情况
  */
 public class AutoProgressMapper<KEYIN, VALIN, KEYOUT, VALOUT>
     extends SqoopMapper<KEYIN, VALIN, KEYOUT, VALOUT> {
@@ -32,12 +33,13 @@ public class AutoProgressMapper<KEYIN, VALIN, KEYOUT, VALOUT>
       AutoProgressMapper.class.getName());
 
   public static final String MAX_PROGRESS_PERIOD_KEY =
-      "sqoop.mapred.auto.progress.max";
+      "sqoop.mapred.auto.progress.max";//该任务线程报道多久后就销毁,不在报道数据了
   public static final String SLEEP_INTERVAL_KEY =
-      "sqoop.mapred.auto.progress.sleep";
+      "sqoop.mapred.auto.progress.sleep";//每次报道后休息多久
   public static final String REPORT_INTERVAL_KEY =
-      "sqoop.mapred.auto.progress.report";
+      "sqoop.mapred.auto.progress.report";//报道的时间间隔
 
+  //上面三个属性的默认值
   // Sleep for 10 seconds at a time.
   public static final int DEFAULT_SLEEP_INTERVAL = 10000;
 
@@ -58,10 +60,11 @@ public class AutoProgressMapper<KEYIN, VALIN, KEYOUT, VALOUT>
     ProgressThread thread = new ProgressThread(context, LOG);
 
     try {
+      //启动一个线程,定期做报道该任务的执行进度
       thread.setDaemon(true);
       thread.start();
 
-      // use default run() method to actually drive the mapping.
+      // use default run() method to actually drive the mapping.真正执行map方法
       super.run(context);
     } finally {
       // Tell the progress thread to exit..

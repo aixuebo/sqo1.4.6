@@ -42,37 +42,40 @@ import org.apache.sqoop.util.LoggingUtils;
  * A RecordReader that reads records from a SQL table.
  * Emits LongWritables containing the record number as
  * key and DBWritables as value.
+ * 从sql中读取一行数据,转换成DBWritable对象
+ * key当前查询limit 100,假设这100个的第1个就是整个数据库的第201条,则这个key就是201,即该key在全部数据库中的序号
+ * value就是一行mysql的数据记录
  */
 public class DBRecordReader<T extends DBWritable> extends
   RecordReader<LongWritable, T> {
 
   private static final Log LOG = LogFactory.getLog(DBRecordReader.class);
 
-  private ResultSet results = null;
+  private ResultSet results = null;//查询结果集
 
   private Class<T> inputClass;
 
   private Configuration conf;
 
-  private DBInputFormat.DBInputSplit split;
+  private DBInputFormat.DBInputSplit split;//获取该sql的limit部分
 
-  private long pos = 0;
+  private long pos = 0;//当前limit 查询100条记录中,已经执行了第几条记录了
 
-  private LongWritable key = null;
+  private LongWritable key = null;//当前查询limit 100,假设这100个的第1个就是整个数据库的第201条,则这个key就是201,即该key在全部数据库中的序号
 
-  private T value = null;
+  private T value = null;//将一行sql数据转换成一个对象
 
-  private Connection connection;
+  private Connection connection;//数据库连接器
 
-  protected PreparedStatement statement;
+  protected PreparedStatement statement;//查询sql的预处理器
 
   private DBConfiguration dbConf;
 
-  private String conditions;
+  private String conditions;//where 条件
 
-  private String [] fieldNames;
+  private String [] fieldNames;//导出的属性集合
 
-  private String tableName;
+  private String tableName;//导出哪个表
 
   /**
    * @param split The InputSplit to read data for
@@ -97,6 +100,7 @@ public class DBRecordReader<T extends DBWritable> extends
   }
   // CHECKSTYLE:ON
 
+  //执行该sql,返回查询结果集
   protected ResultSet executeQuery(String query) throws SQLException {
     this.statement = connection.prepareStatement(query,
         ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
@@ -118,6 +122,7 @@ public class DBRecordReader<T extends DBWritable> extends
 
     // Default codepath for MySQL, HSQLDB, etc.
     // Relies on LIMIT/OFFSET for splits.
+    //sql:select column,column,column from tableName as tableName where (conditions) order by orderBy limit n OFFSET m
     if (dbConf.getInputQuery() == null) {
       query.append("SELECT ");
 
@@ -153,6 +158,7 @@ public class DBRecordReader<T extends DBWritable> extends
     return query.toString();
   }
 
+  //关闭连接
   @Override
   public void close() throws IOException {
     try {
@@ -215,6 +221,7 @@ public class DBRecordReader<T extends DBWritable> extends
     return nextKeyValue();
   }
 
+  //已经查询了多少条记录的百分比
   @Override
   public float getProgress() throws IOException {
     return pos / (float)split.getLength();
@@ -223,7 +230,7 @@ public class DBRecordReader<T extends DBWritable> extends
   @Override
   public boolean nextKeyValue() throws IOException {
     try {
-      if (key == null) {
+      if (key == null) {//初始化long
         key = new LongWritable();
       }
       if (value == null) {
@@ -232,18 +239,18 @@ public class DBRecordReader<T extends DBWritable> extends
       if (null == this.results) {
         // First time into this method, run the query.
         LOG.info("Working on split: " + split);
-        this.results = executeQuery(getSelectQuery());
+        this.results = executeQuery(getSelectQuery());//查询sql
       }
-      if (!results.next()) {
+      if (!results.next()) {//获取不到数据了,返回false,true表示游标已经到下一行数据了,接下来直接结果集rs.get就可以获取到值填充value
         return false;
       }
 
-      // Set the key field value as the output key value
+      // Set the key field value as the output key value 设置key在数据库的序号
       key.set(pos + split.getStart());
 
-      value.readFields(results);
+      value.readFields(results);//从结果集中返回数据,生成对应的value对象,即从rs中获取数据田中到value中
 
-      pos++;
+      pos++;//序号累加1
     } catch (SQLException e) {
       LoggingUtils.logAll(LOG, e);
       if (this.statement != null) {

@@ -56,35 +56,47 @@ import com.cloudera.sqoop.mapreduce.db.OracleDBRecordReader;
  *
  * The SQL query, and input class can be using one of the two
  * setInput methods.
+ * 如何从sql中读取一行行记录,即一行mysql信息传输给他之后,会转换成什么对象
+ * 真正将sql数据转换成对象的,其实是对应的每一个table的java序列化类实现的
+ *
+ * 这种方式查询的sql,不是使用>= <=等方式进行查询,而是使用limit方式查询,因此效率上会稍微有一些问题
+ * 如果使用效率高的>= 或者 <=方式查询,请查看DataDrivenDBInputFormat类实现
  */
 public class DBInputFormat<T extends DBWritable>
 extends InputFormat<LongWritable, T> implements Configurable  {
 
   public static final Log LOG = LogFactory.getLog(
     DBInputFormat.class.getName());
-  private String dbProductName = "DEFAULT";
+  private String dbProductName = "DEFAULT";//查询哪个数据库
 
   /**
    * A Class that does nothing, implementing DBWritable.
+   * 实现数据库操作的序列化以及hadoop的序列化
    */
   public static class NullDBWritable implements DBWritable, Writable {
     @Override
     public void readFields(DataInput in) throws IOException { }
+
+    //不会将数据库结果集的一行数据转换成任意对象
     @Override
     public void readFields(ResultSet arg0) throws SQLException { }
     @Override
     public void write(DataOutput out) throws IOException { }
+
+    //不会向该数据库预处理对象中添加任何值,即不会向数据库中写入任何数据
     @Override
     public void write(PreparedStatement arg0) throws SQLException { }
   }
 
   /**
    * A InputSplit that spans a set of rows.
+   * 如何拆分一个数据库的limit
    */
   public static class DBInputSplit extends InputSplit implements Writable {
 
-    private long end = 0;
-    private long start = 0;
+    private long end = 0;//该数据库截止到什么序号为止
+    private long start = 0;//从什么序号开始查询
+    //eng-start 就是limit length,而offset偏移量就是start
 
     /**
      * Default Constructor.
@@ -145,13 +157,13 @@ extends InputFormat<LongWritable, T> implements Configurable  {
     }
   }
 
-  private String conditions;
+  private String conditions;//where条件
 
   private Connection connection;
 
-  private String tableName;
+  private String tableName;//数据库表名字
 
-  private String[] fieldNames;
+  private String[] fieldNames;//要查询哪些属性
 
   private DBConfiguration dbConf;
 
@@ -159,6 +171,7 @@ extends InputFormat<LongWritable, T> implements Configurable  {
   /** {@inheritDoc} */
   public void setConf(Configuration conf) {
 
+    //初始化数据库的连接和表、属性等信息
     dbConf = new DBConfiguration(conf);
 
     try {
@@ -172,6 +185,8 @@ extends InputFormat<LongWritable, T> implements Configurable  {
     conditions = dbConf.getInputConditions();
   }
 
+
+  //设置隔离级别
   private void setTxIsolation(Connection conn) {
     try {
 
@@ -213,8 +228,8 @@ extends InputFormat<LongWritable, T> implements Configurable  {
         this.connection = dbConf.getConnection();
         this.connection.setAutoCommit(false);
         DatabaseMetaData dbMeta = connection.getMetaData();
-        this.dbProductName = dbMeta.getDatabaseProductName().toUpperCase();
-        setTxIsolation(connection);
+        this.dbProductName = dbMeta.getDatabaseProductName().toUpperCase();//设置数据库
+        setTxIsolation(connection);//设置隔离级别
       }
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -226,6 +241,7 @@ extends InputFormat<LongWritable, T> implements Configurable  {
     return dbProductName;
   }
 
+  //创建一个reader,去读取数据库信息,将其转换成<LongWritable, T>对象,读取某一个limit范围内的数据
   protected RecordReader<LongWritable, T> createDBRecordReader(
       com.cloudera.sqoop.mapreduce.db.DBInputFormat.DBInputSplit split,
       Configuration conf) throws IOException {
@@ -244,7 +260,7 @@ extends InputFormat<LongWritable, T> implements Configurable  {
         return new Db2DBRecordReader<T>(split, inputClass,
             conf, getConnection(), getDBConf(), conditions, fieldNames,
             tableName);
-      } else {
+      } else {//使用DBRecordReader去读取数据库信息
         // Generic reader.
         return new DBRecordReader<T>(split, inputClass,
             conf, getConnection(), getDBConf(), conditions, fieldNames,
@@ -255,6 +271,7 @@ extends InputFormat<LongWritable, T> implements Configurable  {
     }
   }
 
+  //创建一个reader对象
   @Override
   /** {@inheritDoc} */
   public RecordReader<LongWritable, T> createRecordReader(InputSplit split,
@@ -265,6 +282,7 @@ extends InputFormat<LongWritable, T> implements Configurable  {
         context.getConfiguration());
   }
 
+  //对数据库整体表进行拆分,即按照map数量拆分成多个任务去执行
   /** {@inheritDoc} */
   @Override
   public List<InputSplit> getSplits(JobContext job) throws IOException {
@@ -274,12 +292,12 @@ extends InputFormat<LongWritable, T> implements Configurable  {
     try {
       statement = connection.createStatement();
 
-      results = statement.executeQuery(getCountQuery());
+      results = statement.executeQuery(getCountQuery());//计算该sql有多少条数据的sql
       results.next();
 
-      long count = results.getLong(1);
-      int chunks = ConfigurationHelper.getJobNumMaps(job);
-      long chunkSize = (count / chunks);
+      long count = results.getLong(1);//计算该sql有多少条数据
+      int chunks = ConfigurationHelper.getJobNumMaps(job);//获取多少个map执行该数据
+      long chunkSize = (count / chunks);//平均每一个map要执行多少条数据
 
       results.close();
       statement.close();
@@ -291,7 +309,7 @@ extends InputFormat<LongWritable, T> implements Configurable  {
       for (int i = 0; i < chunks; i++) {
         DBInputSplit split;
 
-        if ((i + 1) == chunks) {
+        if ((i + 1) == chunks) {//最后一个数据块,要一直查询到最终结束
           split = new DBInputSplit(i * chunkSize, count);
         } else {
           split = new DBInputSplit(i * chunkSize, (i * chunkSize)
@@ -318,10 +336,13 @@ extends InputFormat<LongWritable, T> implements Configurable  {
   }
 
   /** Returns the query for getting the total number of rows,
-   * subclasses can override this for custom behaviour.*/
+   * subclasses can override this for custom behaviour.
+   * 计算总数的count的sql
+   * select count(*) from biao where conditions
+   **/
   protected String getCountQuery() {
 
-    if (dbConf.getInputCountQuery() != null) {
+    if (dbConf.getInputCountQuery() != null) {//直接使用设置的sql查询
       return dbConf.getInputCountQuery();
     }
 
@@ -336,10 +357,10 @@ extends InputFormat<LongWritable, T> implements Configurable  {
 
   /**
    * Initializes the map-part of the job with the appropriate input settings.
-   *
-   * @param job The map-reduce job
+   * 初始化任务
+   * @param job The map-reduce job 设置job作业
    * @param inputClass the class object implementing DBWritable, which is the
-   * Java object holding tuple fields.
+   * Java object holding tuple fields.一个table表序列化的对象,是sqoop自动生成的代码
    * @param tableName The table to read data from
    * @param conditions The condition which to select data with,
    * eg. '(updated &gt; 20070101 AND length &gt; 0)'
@@ -367,9 +388,9 @@ extends InputFormat<LongWritable, T> implements Configurable  {
    * @param inputClass the class object implementing DBWritable, which is the
    * Java object holding tuple fields.
    * @param inputQuery the input query to select fields. Example :
-   * "SELECT f1, f2, f3 FROM Mytable ORDER BY f1"
+   * "SELECT f1, f2, f3 FROM Mytable ORDER BY f1" 查询的sql
    * @param inputCountQuery the input query that returns
-   * the number of records in the table.
+   * the number of records in the table. 计算count的sql
    * Example : "SELECT COUNT(f1) FROM Mytable"
    * @see #setInput(Job, Class, String, String, String, String...)
    */

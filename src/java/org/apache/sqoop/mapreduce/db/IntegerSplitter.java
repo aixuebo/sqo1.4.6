@@ -33,26 +33,33 @@ import com.cloudera.sqoop.mapreduce.db.DataDrivenDBInputFormat;
 
 /**
  * Implement DBSplitter over integer values.
+ * 对整数类型的属性列进行拆分
  */
 public class IntegerSplitter implements DBSplitter  {
   public static final Log LOG =
       LogFactory.getLog(IntegerSplitter.class.getName());
 
+  /**
+   * @param conf
+   * @param results 对边界查询执行的结果集,该结果集可以获取两个值,分别是最小值和最大值
+   * @param colName 有些例子我看这个属性是order by的属性,即根据该属性选择最终每一个split的结果集,例如colName>=XXX
+     */
     public List<InputSplit> split(Configuration conf, ResultSet results,
         String colName) throws SQLException {
 
-      long minVal = results.getLong(1);
-      long maxVal = results.getLong(2);
+      long minVal = results.getLong(1);//最小值
+      long maxVal = results.getLong(2);//最大值
 
+      //设置边界查询条件的前缀
       String lowClausePrefix = colName + " >= ";
       String highClausePrefix = colName + " < ";
 
-      int numSplits = ConfigurationHelper.getConfNumMaps(conf);
+      int numSplits = ConfigurationHelper.getConfNumMaps(conf);//多少个map去执行该导入操作
       if (numSplits < 1) {
         numSplits = 1;
       }
 
-      if (results.getString(1) == null && results.getString(2) == null) {
+      if (results.getString(1) == null && results.getString(2) == null) {//因为没有最大值和最小值,因此只是查找该属性is null的即可,仅仅一个split文件就够了
         // Range is null to null. Return a null split accordingly.
         List<InputSplit> splits = new ArrayList<InputSplit>();
         splits.add(new DataDrivenDBInputFormat.DataDrivenDBInputSplit(
@@ -61,7 +68,8 @@ public class IntegerSplitter implements DBSplitter  {
       }
 
       // Get all the split points together.
-      List<Long> splitPoints = split(numSplits, minVal, maxVal);
+      List<Long> splitPoints = split(numSplits, minVal, maxVal);//将最大值、最小值、map数量进行拆分,成一个区间集合
+      //打印拆分后的日志信息
       if (LOG.isDebugEnabled()) {
         LOG.debug(String.format("Splits: [%,28d to %,28d] into %d parts",
             minVal, maxVal, numSplits));
@@ -71,12 +79,12 @@ public class IntegerSplitter implements DBSplitter  {
       }
       List<InputSplit> splits = new ArrayList<InputSplit>();
 
-      // Turn the split points into a set of intervals.
+      // Turn the split points into a set of intervals.对区间进行分别设置split查询块
       long start = splitPoints.get(0);
       for (int i = 1; i < splitPoints.size(); i++) {
         long end = splitPoints.get(i);
 
-        if (i == splitPoints.size() - 1) {
+        if (i == splitPoints.size() - 1) {//针对最后一个查询块,要查询全部信息,因此要加入"="条件
           // This is the last one; use a closed interval.
           splits.add(new DataDrivenDBInputFormat.DataDrivenDBInputSplit(
               lowClausePrefix + Long.toString(start),
@@ -91,6 +99,7 @@ public class IntegerSplitter implements DBSplitter  {
         start = end;
       }
 
+      //最后判断一个极限,是否最大值和最小值中有一个是null的,如果有,则增加一个split查询任务,专门查询column is null的数据
       if (results.getString(1) == null || results.getString(2) == null) {
         // At least one extrema is null; add a null split.
         splits.add(new DataDrivenDBInputFormat.DataDrivenDBInputSplit(
@@ -112,6 +121,7 @@ public class IntegerSplitter implements DBSplitter  {
      * [5, 8)
      * [8, 12)
      * [12, 18] note the closed interval for the last split.
+     * 将最大值、最小值、map数量进行拆分,成一个区间集合
      */
     public List<Long> split(long numSplits, long minVal, long maxVal)
         throws SQLException {

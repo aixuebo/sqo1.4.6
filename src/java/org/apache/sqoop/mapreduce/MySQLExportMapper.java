@@ -46,6 +46,8 @@ import com.cloudera.sqoop.manager.MySQLUtils;
  * SequenceFiles (containing existing SqoopRecords) or text files
  * (containing delimited lines) and deliver these results to the fifo
  * used to interface with mysqlimport.
+ *
+ * map方法是由子类实现的,子类数据源可能是文本文件 也可能是序列化的文件
  */
 public class MySQLExportMapper<KEYIN, VALIN>
     extends SqoopMapper<KEYIN, VALIN, NullWritable, NullWritable> {
@@ -56,6 +58,8 @@ public class MySQLExportMapper<KEYIN, VALIN>
   /** Configuration key that specifies the number of bytes before which it
    * commits the current export transaction and opens a new one.
    * Default is 32 MB; setting this to 0 will use no checkpoints.
+   * 每一个export的事物,多少字节就会被提交一次,然后重新打开一个事物去处理
+   * 默认是32M,如果设置为0,则就会一直处理完后才会进行export事物提交
    */
   public static final String MYSQL_CHECKPOINT_BYTES_KEY =
       "sqoop.mysql.export.checkpoint.bytes";
@@ -68,6 +72,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
   /** Configuration key that specifies the number of milliseconds
    * to sleep at the end of each checkpoint commit
    * Default is 0, no sleep.
+   * 每一次export事物提交后,休息多久
    */
   public static final String MYSQL_CHECKPOINT_SLEEP_KEY =
       "sqoop.mysql.export.sleep.ms";
@@ -85,7 +90,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
   /** The process object representing the active connection to mysqlimport. */
   protected Process mysqlImportProcess;
 
-  /** The stream to write to stdin for mysqlimport. */
+  /** The stream to write to stdin for mysqlimport. mysqlimport命令的输入流*/
   protected OutputStream importStream;
 
   // Handlers for stdout and stderr from mysqlimport.
@@ -109,7 +114,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
    * A File object representing the FIFO is in 'fifoFile'.
    */
   private void initMySQLImportProcess() throws IOException {
-    File taskAttemptDir = TaskId.getLocalWorkPath(conf);
+    File taskAttemptDir = TaskId.getLocalWorkPath(conf);//任务的工作目录
 
     this.fifoFile = new File(taskAttemptDir,
         conf.get(MySQLUtils.TABLE_NAME_KEY, "UNKNOWN_TABLE") + ".txt");
@@ -129,7 +134,8 @@ public class MySQLExportMapper<KEYIN, VALIN>
     // Now open the connection to mysqlimport.
     ArrayList<String> args = new ArrayList<String>();
 
-    String connectString = conf.get(MySQLUtils.CONNECT_STRING_KEY);
+    String connectString = conf.get(MySQLUtils.CONNECT_STRING_KEY);//获取连接串
+    //从连接串中获取数据库 host 和port
     String databaseName = JdbcUrl.getDatabaseName(connectString);
     String hostname = JdbcUrl.getHostName(connectString);
     int port = JdbcUrl.getPort(connectString);
@@ -138,15 +144,15 @@ public class MySQLExportMapper<KEYIN, VALIN>
       throw new IOException("Could not determine database name");
     }
 
-    args.add(MySQLUtils.MYSQL_IMPORT_CMD); // needs to be on the path.
-    String password = DBConfiguration.getPassword((JobConf) conf);
+    args.add(MySQLUtils.MYSQL_IMPORT_CMD); // needs to be on the path. mysql的import命令mysqlimport
+    String password = DBConfiguration.getPassword((JobConf) conf); //将密码写成文件
 
     if (null != password && password.length() > 0) {
       passwordFile = new File(MySQLUtils.writePasswordFile(conf));
       args.add("--defaults-file=" + passwordFile);
     }
 
-    String username = conf.get(MySQLUtils.USERNAME_KEY);
+    String username = conf.get(MySQLUtils.USERNAME_KEY);//添加用户名参数
     if (null != username) {
       args.add("--user=" + username);
     }
@@ -155,6 +161,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
     if (-1 != port) {
       args.add("--port=" + Integer.toString(port));
     }
+
 
     args.add("--compress");
     args.add("--local");
@@ -174,14 +181,14 @@ public class MySQLExportMapper<KEYIN, VALIN>
         first = false;
       }
 
-      args.add("--columns=" + sb.toString());
+      args.add("--columns=" + sb.toString());//追加要导入的属性col1,col2,col3
     }
 
     // Specify the delimiters to use.
     int outputFieldDelim = conf.getInt(MySQLUtils.OUTPUT_FIELD_DELIM_KEY,
-        (int) ',');
+        (int) ',');//属性分隔符
     int outputRecordDelim = conf.getInt(MySQLUtils.OUTPUT_RECORD_DELIM_KEY,
-        (int) '\n');
+        (int) '\n');//换行分隔符
     int enclosedBy = conf.getInt(MySQLUtils.OUTPUT_ENCLOSED_BY_KEY, 0);
     int escapedBy = conf.getInt(MySQLUtils.OUTPUT_ESCAPED_BY_KEY, 0);
     boolean encloseRequired = conf.getBoolean(
@@ -205,6 +212,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
     }
 
     // These two arguments are positional and must be last.
+    //向哪个库和哪个表导入数据
     args.add(databaseName);
     args.add(filename);
 
@@ -214,11 +222,12 @@ public class MySQLExportMapper<KEYIN, VALIN>
       LOG.debug("  " + arg);
     }
 
-    // Actually start mysqlimport.
+    // Actually start mysqlimport.开始执行语法
     mysqlImportProcess = Runtime.getRuntime().exec(args.toArray(new String[0]));
 
-    // Log everything it writes to stderr.
+    // Log everything it writes to stderr.将标准异常输出到log中
     // Ignore anything on stdout.
+    //忽略任何标准输出
     this.outSink = new NullAsyncSink();
     this.outSink.processStream(mysqlImportProcess.getInputStream());
 
@@ -235,6 +244,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
     this.bytesWritten = 0;
   }
 
+  //一行记录进入map方法处理,重新定义了run方法,但是map方法没有被重新定义
   @Override
   public void run(Context context) throws IOException, InterruptedException {
     this.conf = context.getConfiguration();
@@ -319,7 +329,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
     this.conf = context.getConfiguration();
 
     // TODO: Support additional encodings.
-    this.mysqlCharSet = MySQLUtils.MYSQL_DEFAULT_CHARSET;
+    this.mysqlCharSet = MySQLUtils.MYSQL_DEFAULT_CHARSET;//mysql的编码
 
     this.checkpointDistInBytes = conf.getLong(
         MYSQL_CHECKPOINT_BYTES_KEY, DEFAULT_CHECKPOINT_BYTES);
@@ -350,6 +360,7 @@ public class MySQLExportMapper<KEYIN, VALIN>
    * @param record A delimited text representation of one record.
    * @param terminator an optional string that contains delimiters that
    *   terminate the record (if not included in 'record' itself).
+   *  子类要调用该方法
    */
   protected void writeRecord(String record, String terminator)
       throws IOException, InterruptedException {
@@ -359,12 +370,15 @@ public class MySQLExportMapper<KEYIN, VALIN>
     // encoded; mysql allows configurable encoding, but defaults to
     // latin-1 (ISO8859_1). We'll convert to latin-1 for now.
     // TODO: Support user-configurable encodings.
+    /**
+     * 但是我们的输入源可能是utf-8编码,mysql允许配置编码为utf-8,但是默认是ISO-8859-1,我们需要将utf-8转换成mysql要的编码方式
+     */
 
-    byte [] mysqlBytes = record.getBytes(this.mysqlCharSet);
-    this.importStream.write(mysqlBytes, 0, mysqlBytes.length);
-    this.bytesWritten += mysqlBytes.length;
+    byte [] mysqlBytes = record.getBytes(this.mysqlCharSet);//将记录按照mysql编码集进行编码成字节数组
+    this.importStream.write(mysqlBytes, 0, mysqlBytes.length);//将编码后的记录写入到输入流中
+    this.bytesWritten += mysqlBytes.length;//被写入的总字节数累加
 
-    if (null != terminator) {
+    if (null != terminator) {//写入换行符
       byte [] termBytes = terminator.getBytes(this.mysqlCharSet);
       this.importStream.write(termBytes, 0, termBytes.length);
       this.bytesWritten += termBytes.length;
@@ -373,16 +387,16 @@ public class MySQLExportMapper<KEYIN, VALIN>
     // If bytesWritten is too big, then we should start a new tx by closing
     // mysqlimport and opening a new instance of the process.
     if (this.checkpointDistInBytes != 0
-        && this.bytesWritten > this.checkpointDistInBytes) {
+        && this.bytesWritten > this.checkpointDistInBytes) {//写入的字节长度超过了数据块长度,就做一次检查导入
       LOG.info("Checkpointing current export.");
 
-      if (this.checkpointSleepMs != 0) {
+      if (this.checkpointSleepMs != 0) {//每次检查导入要休息一阵子
         LOG.info("Pausing.");
         Thread.sleep(this.checkpointSleepMs);
       }
 
-      closeExportHandles();
-      initMySQLImportProcess();
+      closeExportHandles();//关闭导入流
+      initMySQLImportProcess();//重新建立import命令
       this.bytesWritten = 0;
     }
   }

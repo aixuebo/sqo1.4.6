@@ -52,12 +52,13 @@ public abstract class AsyncSqlRecordWriter<K extends SqoopRecord, V>
 
   private Configuration conf;
 
-  protected final int rowsPerStmt; // rows to insert per statement.
+  protected final int rowsPerStmt; // rows to insert per statement.每一个insert语句有多少行记录被导入
 
   // Buffer for records to be put into export SQL statements.
+  //每一次insert语法块要添加多少行数据,都存储在这里面
   private List<SqoopRecord> records;
 
-  // Background thread to actually perform the updates.
+  // Background thread to actually perform the updates.后台真正执行的数据库操作的线程
   private AsyncSqlOutputFormat.AsyncSqlExecThread execThread;
   private boolean startedExecThread;
 
@@ -65,9 +66,12 @@ public abstract class AsyncSqlRecordWriter<K extends SqoopRecord, V>
       throws ClassNotFoundException, SQLException {
     this.conf = context.getConfiguration();
 
+    //每一个insert语句有多少行记录被导入
     this.rowsPerStmt = conf.getInt(
         AsyncSqlOutputFormat.RECORDS_PER_STATEMENT_KEY,
         AsyncSqlOutputFormat.DEFAULT_RECORDS_PER_STATEMENT);
+
+    //每隔多少个sql语法块进行一次事物提交
     int stmtsPerTx = conf.getInt(
         AsyncSqlOutputFormat.STATEMENTS_PER_TRANSACTION_KEY,
         AsyncSqlOutputFormat.DEFAULT_STATEMENTS_PER_TRANSACTION);
@@ -76,8 +80,10 @@ public abstract class AsyncSqlRecordWriter<K extends SqoopRecord, V>
     this.connection = dbConf.getConnection();
     this.connection.setAutoCommit(false);
 
+    //每一次insert语法块要添加多少行数据,都存储在这里面
     this.records = new ArrayList<SqoopRecord>(this.rowsPerStmt);
 
+    //设置后台真正执行数据库的线程,每隔多少个sql语法块进行一次事物提交
     this.execThread = new AsyncSqlOutputFormat.AsyncSqlExecThread(
         connection, stmtsPerTx);
     this.execThread.setDaemon(true);
@@ -137,7 +143,7 @@ public abstract class AsyncSqlRecordWriter<K extends SqoopRecord, V>
   private void execUpdate(boolean commit, boolean stopThread)
       throws InterruptedException, SQLException {
 
-    if (!startedExecThread) {
+    if (!startedExecThread) {//开启线程
       this.execThread.start();
       this.startedExecThread = true;
     }
@@ -146,12 +152,13 @@ public abstract class AsyncSqlRecordWriter<K extends SqoopRecord, V>
     boolean successfulPut = false;
     try {
       if (records.size() > 0) {
-        stmt = getPreparedStatement(records);
+        stmt = getPreparedStatement(records);//对记录进行组装成一个insert语法块
         this.records.clear();
       }
 
       // Pass this operation off to the update thread. This will block if
       // the update thread is already performing an update.
+      //将insert语法块添加到队列中
       AsyncSqlOutputFormat.AsyncDBOperation op =
           new AsyncSqlOutputFormat.AsyncDBOperation(stmt, isBatchExec(),
                   commit, stopThread);
@@ -164,7 +171,7 @@ public abstract class AsyncSqlRecordWriter<K extends SqoopRecord, V>
       }
     }
 
-    // Check for any previous SQLException. If one happened, rethrow it here.
+    // Check for any previous SQLException. If one happened, rethrow it here.记录异常,并且抛异常
     SQLException lastException = execThread.getLastError();
     if (null != lastException) {
       LoggingUtils.logAll(LOG, lastException);
@@ -210,8 +217,9 @@ public abstract class AsyncSqlRecordWriter<K extends SqoopRecord, V>
   public void write(K key, V value)
       throws InterruptedException, IOException {
     try {
+      //记录一行数据,并且加入到队列中
       records.add((SqoopRecord) key.clone());
-      if (records.size() >= this.rowsPerStmt) {
+      if (records.size() >= this.rowsPerStmt) {//将一组记录组成一个insert语法块,提交给线程队列,不让他去提交和批处理
         execUpdate(false, false);
       }
     } catch (CloneNotSupportedException cnse) {

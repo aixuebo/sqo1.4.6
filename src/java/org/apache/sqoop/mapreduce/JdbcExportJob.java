@@ -124,6 +124,7 @@ public class JdbcExportJob extends ExportJobBase {
     }
   }
 
+  //根据文件类型不同,找到对应的文件解析器
   @Override
   protected Class<? extends Mapper> getMapperClass() {
     if (isHCatJob) {
@@ -142,6 +143,7 @@ public class JdbcExportJob extends ExportJobBase {
     }
   }
 
+  //设置输出
   @Override
   protected void configureOutputFormat(Job job, String tableName,
       String tableClassName) throws IOException {

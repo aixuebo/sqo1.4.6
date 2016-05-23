@@ -54,11 +54,15 @@ import com.cloudera.sqoop.mapreduce.db.TextSplitter;
 import com.cloudera.sqoop.mapreduce.db.DBInputFormat.DBInputSplit;
 
 /**
+ *
  * A InputFormat that reads input data from an SQL table.
  * Operates like DBInputFormat, but instead of using LIMIT and OFFSET to
  * demarcate splits, it tries to generate WHERE clauses which separate the
  * data into roughly equivalent shards.
  * 默认的数据库导出的输入源格式对象
+ *
+ * 这种方式查询的sql,可以使用>= <=等方式进行查询,比limit方式查询效率要高很多
+ * 缺点是当查询的主键,即>= 或者 <= 分布不均匀的时候,会有数据倾斜,有些条件的数据很多,会影响最终进度
  *
  */
 public class DataDrivenDBInputFormat<T extends DBWritable>
@@ -77,6 +81,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
   /**
    * @return the DBSplitter implementation to use to divide the table/query
    * into InputSplits.
+   * 根据不同属性的类型,去决定他的拆分类是什么
    *
    */
   protected DBSplitter getSplitter(int sqlDataType) {
@@ -126,18 +131,18 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
   public List<InputSplit> getSplits(JobContext job) throws IOException {
 
     int targetNumTasks = ConfigurationHelper.getJobNumMaps(job);
-    String boundaryQuery = getDBConf().getInputBoundingQuery();
+    String boundaryQuery = getDBConf().getInputBoundingQuery();//边界查询sql
 
     // If user do not forced us to use his boundary query and we don't have to
     // bacause there is only one mapper we will return single split that
     // separates nothing. This can be considerably more optimal for a large
     // table with no index.
     if (1 == targetNumTasks
-            && (boundaryQuery == null || boundaryQuery.isEmpty())) {
+            && (boundaryQuery == null || boundaryQuery.isEmpty())) {//设置上下条件都是1=1,因为没有设置边界查询,并且只有一个map,因此就是查询全部符合条件的sql
       List<InputSplit> singletonSplit = new ArrayList<InputSplit>();
       singletonSplit.add(new com.cloudera.sqoop.mapreduce.db.
           DataDrivenDBInputFormat.DataDrivenDBInputSplit("1=1", "1=1"));
-      return singletonSplit;
+      return singletonSplit;//返回单独的一个split拆分
     }
 
     ResultSet results = null;
@@ -146,9 +151,11 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
     try {
       statement = connection.createStatement();
 
+      //select MIN(splitCol),MAX(splitCol) FROM table where (conditions) 获取满足查询的最大值 和 最小值
       String query = getBoundingValsQuery();
       LOG.info("BoundingValsQuery: " + query);
 
+      //获取最大值和最小值
       results = statement.executeQuery(query);
       results.next();
 
@@ -163,6 +170,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
           sqlDataType = Types.BIGINT;
       }
 
+      //根据最大值和最小值类型,生成拆分对象
       DBSplitter splitter = getSplitter(sqlDataType);
       if (null == splitter) {
         throw new IOException("Sqoop does not have the splitter for the given"
@@ -209,15 +217,19 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
    *
    * The min value should be in the first column, and the
    * max value should be in the second column of the results.
+   * 结果集第一个列是最小值,第二列是最大值,返回值是能获取该结果集的sql
+   * 最终sql为:
+   * select MIN(splitCol),MAX(splitCol) FROM table where (conditions)
    */
   protected String getBoundingValsQuery() {
-    // If the user has provided a query, use that instead.
+    // If the user has provided a query, use that instead.如果用户设置了边界查询sql,则返回该sql即可
     String userQuery = getDBConf().getInputBoundingQuery();
     if (null != userQuery) {
       return userQuery;
     }
 
     // Auto-generate one based on the table name we've been provided with.
+    //自动生成sql
     StringBuilder query = new StringBuilder();
 
     String splitCol = getDBConf().getInputOrderBy();
@@ -232,12 +244,13 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
     return query.toString();
   }
 
+  //创建一个数据库表的读取reader对象
   protected RecordReader<LongWritable, T> createDBRecordReader(
       DBInputSplit split, Configuration conf) throws IOException {
 
     DBConfiguration dbConf = getDBConf();
     @SuppressWarnings("unchecked")
-    Class<T> inputClass = (Class<T>) (dbConf.getInputClass());
+    Class<T> inputClass = (Class<T>) (dbConf.getInputClass());// 数据库表对应的java对象,该对象是可以将一个数据库表的一行记录转换成一个实体对象的类
     String dbProductName = getDBProductName();
 
     LOG.debug("Creating db record reader for db product: " + dbProductName);
@@ -262,6 +275,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
    * This will be expanded to something like:
    * SELECT foo FROM mytable WHERE (id &gt; 100) AND (id &lt; 250)
    * inside each split.
+   * 设置边界查询sql
    */
   public static void setBoundingQuery(Configuration conf, String query) {
     if (null != query) {
@@ -281,6 +295,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
   /** Note that the "orderBy" column is called the "splitBy" in this version.
     * We reuse the same field, but it's not strictly ordering it
     * -- just partitioning the results.
+   * 设置输入条件
     */
   public static void setInput(Job job,
       Class<? extends DBWritable> inputClass,
@@ -293,6 +308,7 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
 
   /** setInput() takes a custom query and a separate "bounding query" to use
       instead of the custom "count query" used by DBInputFormat.
+   输入job的条件
     */
   public static void setInput(Job job,
       Class<? extends DBWritable> inputClass,
@@ -310,8 +326,8 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
   public static class DataDrivenDBInputSplit
       extends DBInputFormat.DBInputSplit {
 
-    private String lowerBoundClause;
-    private String upperBoundClause;
+    private String lowerBoundClause;//低边界条件 比如 1=1
+    private String upperBoundClause;//高边界条件  比如1=1
 
     /**
      * Default Constructor.

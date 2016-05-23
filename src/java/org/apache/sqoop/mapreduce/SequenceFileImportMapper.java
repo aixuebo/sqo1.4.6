@@ -28,6 +28,7 @@ import com.cloudera.sqoop.mapreduce.AutoProgressMapper;
 
 /**
  * Imports records by writing them to a SequenceFile.
+ * 将数据库数据解析成SqoopRecord,而该对象已经实现了hadoop的序列化方法,因此直接就是序列化的字节文件,直接进入reduce即可
  */
 public class SequenceFileImportMapper
     extends AutoProgressMapper<LongWritable, SqoopRecord, LongWritable,

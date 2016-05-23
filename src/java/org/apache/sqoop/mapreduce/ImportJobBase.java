@@ -62,6 +62,9 @@ public class ImportJobBase extends JobBase {
   /** Controls how java.math.BigDecimal values should be converted to Strings
    *  If set to true (default) then will call toPlainString() method.
    *  If set to false then will call toString() method.
+   *  BigDecimal类型的java,控制如何将其转换成String类型的类型转换
+   *  如果设置为true,则调用toPlainString方法,默认是true
+   *  如果设置为false调用toString方法
    */
   public static final String PROPERTY_BIGDECIMAL_FORMAT =
       "sqoop.bigdecimal.format.string";

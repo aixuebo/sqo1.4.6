@@ -37,6 +37,7 @@ import com.cloudera.sqoop.mapreduce.db.DBOutputFormat;
 
 /**
  * Run an update-based export using JDBC (JDBC-based UpdateOutputFormat).
+ * 仅仅做update操作,即数据库存在的记录才会被更改,不存在的记录就会被跳过
  */
 public class JdbcUpdateExportJob extends ExportJobBase {
 

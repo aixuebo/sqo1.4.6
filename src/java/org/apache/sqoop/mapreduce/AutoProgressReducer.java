@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * Identity reducer that continuously reports progress via a background thread.
+ * reduce方法基础上有一个单独的线程,定期去报道该任务的执行进度情况
  */
 public class AutoProgressReducer<KEYIN, VALIN, KEYOUT, VALOUT>
     extends SqoopReducer<KEYIN, VALIN, KEYOUT, VALOUT> {

@@ -27,6 +27,7 @@ import com.cloudera.sqoop.mapreduce.AutoProgressMapper;
 /**
  * Reads a SqoopRecord from the SequenceFile in which it's packed and emits
  * that DBWritable to the OutputFormat for writeback to the database.
+ * export的数据源是字节文件,该对象已经实现了hadoop的序列化方法,因此直接就是序列化的SqoopRecord对象,直接进入reduce方法即可
  */
 public class SequenceFileExportMapper
     extends AutoProgressMapper<LongWritable, SqoopRecord, SqoopRecord,

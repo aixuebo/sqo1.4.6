@@ -35,6 +35,8 @@ import org.apache.hadoop.util.*;
 /**
  * An {@link OutputFormat} that writes plain text files.
  * Only writes the key. Does not write any delimiter/newline after the key.
+ * 仅对key进行处理,过滤掉value
+ * 对key传入的对象,将其转换成UTF-8的字节数组,写入到输出流中,并且在输出流中不用写入任何回车换行的字符,纯粹的原生数据写入到输出流即可
  */
 public class RawKeyTextOutputFormat<K, V> extends FileOutputFormat<K, V> {
 
@@ -56,6 +58,7 @@ public class RawKeyTextOutputFormat<K, V> extends FileOutputFormat<K, V> {
      * case.
      * @param o the object to print
      * @throws IOException if the write throws, we pass it on
+     * 将要写入的对象转换成UTF-8的字节数组,写入到out输出流中
      */
     private void writeObject(Object o) throws IOException {
       if (o instanceof Text) {
@@ -66,6 +69,7 @@ public class RawKeyTextOutputFormat<K, V> extends FileOutputFormat<K, V> {
       }
     }
 
+    //仅对key进行存储就可以了,过滤掉value
     public synchronized void write(K key, V value) throws IOException {
       writeObject(key);
     }

@@ -41,9 +41,9 @@ import com.cloudera.sqoop.mapreduce.db.DBConfiguration;
  * Update an existing table of data with new value data.
  * This requires a designated 'key column' for the WHERE clause
  * of an UPDATE statement.
- *
+ * 对在数据库表中已经存在的数据进行更新操作,这就要求有一个关键列
  * Updates are executed en batch in the PreparedStatement.
- *
+ * 在批处理中进行更新
  * Uses DBOutputFormat/DBConfiguration for configuring the output.
  */
 public class UpdateOutputFormat<K extends SqoopRecord, V>
@@ -52,21 +52,23 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
   private static final Log LOG = LogFactory.getLog(UpdateOutputFormat.class);
 
   @Override
-  /** {@inheritDoc} */
+  /** {@inheritDoc}
+   *  各种校验信息
+   **/
   public void checkOutputSpecs(JobContext context)
       throws IOException, InterruptedException {
     Configuration conf = context.getConfiguration();
     DBConfiguration dbConf = new DBConfiguration(conf);
 
     // Sanity check all the configuration values we need.
-    if (null == conf.get(DBConfiguration.URL_PROPERTY)) {
+    if (null == conf.get(DBConfiguration.URL_PROPERTY)) {//必须有数据库连接串
       throw new IOException("Database connection URL is not set.");
     } else if (null == dbConf.getOutputTableName()) {
-      throw new IOException("Table name is not set for export.");
+      throw new IOException("Table name is not set for export.");//数据库表名称
     } else if (null == dbConf.getOutputFieldNames()) {
       throw new IOException(
           "Output field names are null.");
-    } else if (null == conf.get(ExportJobBase.SQOOP_EXPORT_UPDATE_COL_KEY)) {
+    } else if (null == conf.get(ExportJobBase.SQOOP_EXPORT_UPDATE_COL_KEY)) {//update的主键必须存在
       throw new IOException("Update key column is not set for export.");
     }
   }
@@ -88,10 +90,11 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
    */
   public class UpdateRecordWriter extends AsyncSqlRecordWriter<K, V> {
 
-    protected String tableName;
-    protected String [] columnNames; // The columns to update.
-    protected String [] updateCols; // The columns containing the fixed key.
+    protected String tableName;//要update的表名
+    protected String [] columnNames; // The columns to update.准备更改的列
+    protected String [] updateCols; // The columns containing the fixed key. where条件的列
 
+    //初始化三个参数
     public UpdateRecordWriter(TaskAttemptContext context)
         throws ClassNotFoundException, SQLException {
       super(context);
@@ -101,6 +104,7 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
       DBConfiguration dbConf = new DBConfiguration(conf);
       this.tableName = dbConf.getOutputTableName();
       this.columnNames = dbConf.getOutputFieldNames();
+      //where条件所需要的列
       String updateKeyColumns =
           conf.get(ExportJobBase.SQOOP_EXPORT_UPDATE_COL_KEY);
 
@@ -119,6 +123,7 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
       updateCols = updateKeys.toArray(new String[updateKeys.size()]);
     }
 
+    //是否批处理执行
     @Override
     /** {@inheritDoc} */
     protected boolean isBatchExec() {
@@ -135,6 +140,7 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
 
     /**
      * @return the list of columns we are updating.
+     * 返回哪些列要去被修改
      */
     protected final String [] getColumnNames() {
       if (null == columnNames) {
@@ -146,11 +152,13 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
 
     /**
      * @return the column we are using to determine the row to update.
+     * 返回where条件中需要的列,即这些列判断哪些行会被修改
      */
     protected final String[] getUpdateColumns() {
       return updateCols;
     }
 
+    //生成一个预编译的sql
     @Override
     /** {@inheritDoc} */
     protected PreparedStatement getPreparedStatement(
@@ -169,8 +177,8 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
       // assumes that the update key column is the last column serialized in
       // by the underlying record. Our code auto-gen process for exports was
       // responsible for taking care of this constraint.
-      for (SqoopRecord record : userRecords) {
-        record.write(stmt, 0);
+      for (SqoopRecord record : userRecords) {//循环每一个实体对象,对每一个预编译的问号进行分配数据,然后提交批处理sql
+        record.write(stmt, 0);//每一个sql的问号都是从0开始进行赋值的
         stmt.addBatch();
       }
 
@@ -180,6 +188,8 @@ public class UpdateOutputFormat<K extends SqoopRecord, V>
     /**
      * @return an UPDATE statement that modifies rows based on a single key
      * column (with the intent of modifying a single row).
+     * 写入update的sql
+     * update table set column1=?,column2=? where updateCols1=? and updateCols2=?
      */
     protected String getUpdateStatement() {
       StringBuilder sb = new StringBuilder();

@@ -51,6 +51,7 @@ import com.cloudera.sqoop.lib.SqoopRecord;
 
 /**
  * Creates an ORM class to represent a table from a database.
+ * 创建一个数据库的表的java映射类
  */
 public class ClassWriter {
 
@@ -58,6 +59,7 @@ public class ClassWriter {
 
   // The following are keywords and cannot be used for class, method, or field
   // names.
+  //java的关键词集合
   public static final HashSet<String> JAVA_RESERVED_WORDS;
 
   static {
@@ -122,6 +124,7 @@ public class ClassWriter {
     JAVA_RESERVED_WORDS.add("Text");
   }
 
+  //每一个方法最多允许有多少个属性
   public static final String PROPERTY_CODEGEN_METHODS_MAXCOLS =
       "codegen.methods.maxcols";
 
@@ -133,11 +136,13 @@ public class ClassWriter {
    * If the way that we generate classes changes, bump this number.
    * This number is retrieved by the SqoopRecord.getClassFormatVersion()
    * method.
+   * 该类的版本号
    */
   public static final int CLASS_WRITER_VERSION = 3;
 
   /**
    * Default maximum number of columns per method.
+   * 每一个方法最多允许有多少个属性
    */
   public static final int MAX_COLUMNS_PER_METHOD_DEFAULT = 500;
 
@@ -152,15 +157,20 @@ public class ClassWriter {
   private ConnManager connManager;
   private String tableName;
   private CompilationManager compileManager;
+  /**
+   * BigDecimal类型的java,控制如何将其转换成String类型的类型转换
+   *  如果设置为true,则调用toPlainString方法,默认是true
+   *  如果设置为false调用toString方法
+   */
   private boolean bigDecimalFormatString;
 
   /**
    * Creates a new ClassWriter to generate an ORM class for a table
    * or arbitrary query.
    * @param opts program-wide options
-   * @param connMgr the connection manager used to describe the table.
+   * @param connMgr the connection manager used to describe the table. 连接指定的数据库的连接器
    * @param table the name of the table to read. If null, query is taken
-   * from the SqoopOptions.
+   * from the SqoopOptions.要连接到table名字,如果没有,则会从配置文件中读取
    */
   public ClassWriter(final SqoopOptions opts, final ConnManager connMgr,
       final String table, final CompilationManager compMgr) {
@@ -199,6 +209,8 @@ public class ClassWriter {
   /**
    * @param word a word to test.
    * @return true if 'word' is reserved the in Java language.
+   * true表示该参数是java的关键字
+   * 测试该参数是否是java的关键字
    */
   private static boolean isReservedWord(String word) {
     return JAVA_RESERVED_WORDS.contains(word);
@@ -211,15 +223,15 @@ public class ClassWriter {
    * Ensures that the returned identifier matches [A-Za-z_][A-Za-z0-9_]*
    * and is not a reserved word.
    *
-   * @param candidate A string we want to use as an identifier
+   * @param candidate A string we want to use as an identifier 我们想要使用做唯一码的候选人字符串
    * @return A string naming an identifier which compiles and is
-   *   similar to the candidate.
+   *   similar to the candidate.将参数候选人转换成真正可以使用的候选人名称,即相当于对候选人进行格式化处理
    */
   public static String toIdentifier(String candidate) {
     StringBuilder sb = new StringBuilder();
     boolean first = true;
     for (char c : candidate.toCharArray()) {
-      if (Character.isJavaIdentifierStart(c) && first) {
+      if (Character.isJavaIdentifierStart(c) && first) {//判断该字符是不是java允许的字符,是则追加到sb中
         // Ok for this to be the first character of the identifier.
         sb.append(c);
         first = false;
@@ -232,6 +244,7 @@ public class ClassWriter {
         // If it's just not allowed to be the first char, add a leading '_'.
         // If we have a reasonable translation (e.g., '-' -> '_'), do that.
         // Otherwise, drop it.
+        //如果第一个字符就不是标准的,则在其前面追加_即可
         if (first && Character.isJavaIdentifierPart(c)
             && !Character.isJavaIdentifierStart(c)) {
           sb.append("_");
@@ -261,6 +274,7 @@ public class ClassWriter {
    * @param candidate A string we want to use as an identifier
    * @return A string naming an identifier which compiles and is
    *   similar to the candidate.
+   *   将候选人参数字符串转换成java的关键字
    */
   public static String toJavaIdentifier(String candidate) {
     String output = toIdentifier(candidate);

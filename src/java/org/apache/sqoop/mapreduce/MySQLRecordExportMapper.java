@@ -26,6 +26,7 @@ import com.cloudera.sqoop.mapreduce.MySQLExportMapper;
 /**
  * mysqlimport-based exporter which accepts SqoopRecords (e.g., from
  * SequenceFiles) to emit to the database.
+ * mysql的import命令,接收的输入不是文本文件,而是序列化的文件,即SequenceFiles对象
  */
 public class MySQLRecordExportMapper
     extends MySQLExportMapper<LongWritable, SqoopRecord> {
@@ -40,6 +41,7 @@ public class MySQLRecordExportMapper
   public void map(LongWritable key, SqoopRecord val, Context context)
       throws IOException, InterruptedException {
 
+    //因为是序列化的对象,因此不需要有回车换行分隔符
     writeRecord(val.toString(), null);
 
     // We don't emit anything to the OutputCollector because we wrote

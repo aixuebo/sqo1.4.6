@@ -54,6 +54,7 @@ public class MySQLUpsertOutputFormat<K extends SqoopRecord, V>
 
   /**
    * RecordWriter to write the output to UPDATE/INSERT statements.
+   * 将sql组装成update-insert形式的sql
    */
   public class MySQLUpsertRecordWriter extends UpdateRecordWriter {
 
@@ -75,23 +76,31 @@ public class MySQLUpsertOutputFormat<K extends SqoopRecord, V>
       // with the operations in the update thread.
       Connection conn = getConnection();
       synchronized (conn) {
-	  stmt = conn.prepareStatement(getUpdateStatement(userRecords.size()));
+	  stmt = conn.prepareStatement(getUpdateStatement(userRecords.size()));//组装成预编译sql
       }
 
       // Inject the record parameters into the UPDATE and WHERE clauses.  This
       // assumes that the update key column is the last column serialized in
       // by the underlying record. Our code auto-gen process for exports was
       // responsible for taking care of this constraint.
+      //注入各种参数具体值,我们假设更新的关键key是最后一列,自带的sqoop自动生成器为export导出就是这样约束的
       int i = 0;
       for (SqoopRecord record : userRecords) {
-        record.write(stmt, i);
-        i += columnNames.length;
+        record.write(stmt, i);//从i偏移量开始设置值
+        i += columnNames.length;//增加i的数量
       }
       stmt.addBatch();
 
       return stmt;
     }
 
+    /**
+     * 不存在则insert 存在则update的mysql特殊语法
+     * 输出sql
+     * INSERT INTO tableName (column,column,column) value(?,?,?),(?,?,?),(?,?,?)
+     * ON DUPLICATE KEY UPDATE column=values(column),column=values(column),column=values(column) 即更新内容就是替换到value的内容即可
+     * @param numRows 要更新多少条数据,比如该值为4,则value就有了4组待插入的值
+       */
     protected String getUpdateStatement(int numRows) {
       boolean first;
       StringBuilder sb = new StringBuilder();
@@ -113,7 +122,7 @@ public class MySQLUpsertOutputFormat<K extends SqoopRecord, V>
         if (i > 0) {
           sb.append("),(");
         }
-	for (int j = 0; j < columnNames.length; j++) {
+	    for (int j = 0; j < columnNames.length; j++) {
           if (j > 0) {
             sb.append(", ");
           }

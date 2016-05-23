@@ -34,6 +34,7 @@ import com.cloudera.sqoop.mapreduce.db.DataDrivenDBInputFormat;
 
 /**
  * Class that runs an export job using mysqlimport in the mapper.
+ * 使用mysql的import命令做export操作的流程
  */
 public class MySQLExportJob extends ExportJobBase {
 
@@ -47,6 +48,7 @@ public class MySQLExportJob extends ExportJobBase {
   @Override
   /**
    * Configure the inputformat to use for the job.
+   * 初始化信息
    */
   protected void configureInputFormat(Job job, String tableName,
       String tableClassName, String splitByCol)
@@ -105,9 +107,9 @@ public class MySQLExportJob extends ExportJobBase {
 
   @Override
   protected Class<? extends Mapper> getMapperClass() {
-    if (inputIsSequenceFiles()) {
+    if (inputIsSequenceFiles()) {//序列化文件导入
       return MySQLRecordExportMapper.class;
-    } else {
+    } else {//文本文件导入
       return MySQLTextExportMapper.class;
     }
   }

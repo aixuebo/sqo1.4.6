@@ -34,6 +34,7 @@ import com.cloudera.sqoop.mapreduce.db.DataDrivenDBInputFormat;
 
 /**
  * Implement DBSplitter over BigDecimal values.
+ * 详细解释查看IntegerSplitter类和DBSplitter类注释
  */
 public class BigDecimalSplitter implements DBSplitter  {
   private static final Log LOG = LogFactory.getLog(BigDecimalSplitter.class);

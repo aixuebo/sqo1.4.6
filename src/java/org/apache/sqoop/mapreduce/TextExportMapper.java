@@ -36,6 +36,8 @@ import org.apache.commons.logging.LogFactory;
  * record and emits that DBWritable to the OutputFormat for writeback to the
  * database.
  * hdfs上存储的是文本文件,将该文本文件插入到数据库中
+ *
+ * 将一行text转换成SqoopRecord对象
  */
 public class TextExportMapper
     extends AutoProgressMapper<LongWritable, Text, SqoopRecord, NullWritable> {
@@ -43,7 +45,7 @@ public class TextExportMapper
   public static final Log LOG =
     LogFactory.getLog(TextExportMapper.class.getName());
 
-  private SqoopRecord recordImpl;
+  private SqoopRecord recordImpl;//解析table对应的实体类
 
   public TextExportMapper() {
   }
@@ -55,6 +57,7 @@ public class TextExportMapper
     Configuration conf = context.getConfiguration();
 
     // Instantiate a copy of the user's class to hold and parse the record.
+    //table表对应的实体类
     String recordClassName = conf.get(
         ExportJobBase.SQOOP_EXPORT_TABLE_CLASS_KEY);
     if (null == recordClassName) {
@@ -77,29 +80,29 @@ public class TextExportMapper
     }
   }
 
-
+  //将一行text转换成SqoopRecord对象
   public void map(LongWritable key, Text val, Context context)
       throws IOException, InterruptedException {
     try {
-      recordImpl.parse(val);
-      context.write(recordImpl, NullWritable.get());
-    } catch (Exception e) {
+      recordImpl.parse(val);//进行对文本解析
+      context.write(recordImpl, NullWritable.get());//然后放到reduce中
+    } catch (Exception e) {//解析异常
       // Something bad has happened
       LOG.error("");
       LOG.error("Exception raised during data export");
       LOG.error("");
 
-      LOG.error("Exception: ", e);
-      LOG.error("On input: " + val);
+      LOG.error("Exception: ", e);//异常信息
+      LOG.error("On input: " + val);//异常的原始内容
 
       InputSplit is = context.getInputSplit();
-      if (is instanceof FileSplit) {
+      if (is instanceof FileSplit) {//哪个文件有异常
         LOG.error("On input file: " + ((FileSplit)is).getPath());
-      } else if (is instanceof CombineFileSplit) {
+      } else if (is instanceof CombineFileSplit) {//哪个合并的压缩文件有异常
         LOG.error("On input file: "
           + context.getConfiguration().get("map.input.file"));
       }
-      LOG.error("At position " + key);
+      LOG.error("At position " + key);//异常在原始文件的什么字节处开始的异常
 
       LOG.error("");
       LOG.error("Currently processing split:");
@@ -109,7 +112,7 @@ public class TextExportMapper
       LOG.error("This issue might not necessarily be caused by current input");
       LOG.error("due to the batching nature of export.");
       LOG.error("");
-
+      //抛异常,导入操作失败
       throw new IOException("Can't export data, please check failed map task logs", e);
     }
   }

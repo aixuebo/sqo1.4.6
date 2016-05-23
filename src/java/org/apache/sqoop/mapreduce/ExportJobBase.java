@@ -70,7 +70,9 @@ public class ExportJobBase extends JobBase {
   public static final Log LOG = LogFactory.getLog(
       ExportJobBase.class.getName());
 
-  /** What SqoopRecord class to use to read a record for export. */
+  /** What SqoopRecord class to use to read a record for export.
+   * table表对应的实体类
+   **/
   public static final String SQOOP_EXPORT_TABLE_CLASS_KEY =
       "sqoop.mapreduce.export.table.class";
 
@@ -78,6 +80,7 @@ public class ExportJobBase extends JobBase {
    *
    * What column of the table to use for the WHERE clause of
    * an updating export.
+   * 在where中使用,可以是多个列,用逗号分隔
    */
   public static final String SQOOP_EXPORT_UPDATE_COL_KEY =
       "sqoop.mapreduce.export.update.col";
@@ -493,6 +496,7 @@ public class ExportJobBase extends JobBase {
   /**
    * @return true if the input directory contains SequenceFiles.
    * @deprecated use {@link #getInputFileType()} instead
+   * true表示该文件是hadoop的序列化文件SEO
    */
   @Deprecated
   protected boolean inputIsSequenceFiles() {
@@ -505,6 +509,7 @@ public class ExportJobBase extends JobBase {
     }
   }
 
+  //返回输入源文件的类型
   protected FileType getInputFileType() {
     if (isHCatJob) {
       return FileType.HCATALOG_MANAGED_FILE;

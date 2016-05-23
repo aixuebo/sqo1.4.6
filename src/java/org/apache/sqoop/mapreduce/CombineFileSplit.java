@@ -50,7 +50,7 @@ public class CombineFileSplit extends InputSplit implements Writable {
   private long[] startoffset;
   private long[] lengths;
   private String[] locations;
-  private long totLength;
+  private long totLength;//所有length数组的总和
 
   /**
    * default constructor
@@ -172,6 +172,9 @@ public class CombineFileSplit extends InputSplit implements Writable {
     }
   }
 
+  /**
+   * 打印结果  paths: path1:开始偏移量+文件长度,path2:开始偏移量+文件长度  Locations:locations1:location2;
+     */
   @Override
  public String toString() {
     StringBuffer sb = new StringBuffer();

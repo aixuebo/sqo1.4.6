@@ -28,6 +28,8 @@ import org.apache.hadoop.conf.Configuration;
 /**
  * A failure handler which uses basic retry mechanism for handling
  * SQL failures. Retry settings are embedded in job configuration
+ * 一个处理失败的类
+ * 使用尝试机制,去处理sql的异常情况
  */
 public class BasicRetrySQLFailureHandler
     extends SQLFailureHandler {
@@ -37,9 +39,9 @@ public class BasicRetrySQLFailureHandler
 
   // Configuration name for retry attempts
   public static final String CONNECTION_RETRY_WAIT_MAX =
-      "connection.recover.wait.max";
+      "connection.recover.wait.max";//最大尝试等待的最大时间
 
-  // Configuration name for retry interval
+  // Configuration name for retry interval 每一次尝试后停留时间
   public static final String CONNECTION_RETRY_WAIT_INTERVAL =
       "connection.recover.wait.interval";
 
@@ -59,6 +61,7 @@ public class BasicRetrySQLFailureHandler
   public void initialize(Configuration conf) throws IOException {
     super.initialize(conf);
 
+    //初始化属性
     // Retrieve retry settings from job-configuration
     retryWaitMax = conf.getInt(CONNECTION_RETRY_WAIT_MAX,
         DEFAULT_RETRY_WAIT_MAX);
@@ -78,6 +81,7 @@ public class BasicRetrySQLFailureHandler
    *
    * This is a generic handler for all SQLException failures. Subclasses
    * should override this method for specific error handling
+   * true表示异常是sql异常
    */
   public boolean canHandleFailure(Throwable failureCause) {
     return failureCause != null
@@ -87,45 +91,47 @@ public class BasicRetrySQLFailureHandler
   /**
    * Provide specific handling for the failure and return a new valid
    * connection.
+   * 在sql失败的时候,重新创建新的数据库连接
    */
   public Connection recover() throws IOException {
-    long nextRetryWait = 0;
-    int retryAttempts = 0;
-    boolean doRetry = true;
+    long nextRetryWait = 0;//下一次重试连接的等候时间
+    int retryAttempts = 0;//尝试次数
+    boolean doRetry = true;//true表示还可以继续循环处理
     boolean validConnection = false;
     Connection conn = null;
 
     do {
       validConnection = false;
 
-      // Use increasing wait interval
+      // Use increasing wait interval下次尝试等待的时间
       nextRetryWait = (long) Math.pow(retryAttempts, 2) * retryWaitInterval;
 
       // Increase the number of retry attempts
       ++retryAttempts;
 
       // If we exceeded max retry attempts, try one last time with max value
-      if (nextRetryWait > retryWaitMax) {
+      if (nextRetryWait > retryWaitMax) {//超过最大值,
         nextRetryWait = retryWaitMax;
-        doRetry = false;
+        doRetry = false;//不允许在尝试了
       }
 
       try {
         // Wait before trying to recover the connection
         Thread.sleep(nextRetryWait);
 
+        //每一次都重新建立连接
         // Discard the connection
         discardConnection(conn);
 
         // Try to get a new connection
-        conn = super.getConnection();
-        if (!validateConnection(conn)) {
+        conn = super.getConnection();//重新建立连接
+        if (!validateConnection(conn)) {//对刚刚建立的连接,确保有效
           // Log failure and continue
           LOG.warn("Connection not valid");
-        } else {
+        } else {//说明连接有效
           LOG.info("A new connection has been established");
 
-          // Connection has been recovered so stop recovery retries
+          // ConnectionConnection has been recovered so stop recovery retries
           doRetry = false;
           validConnection = true;
         }
@@ -140,7 +146,7 @@ public class BasicRetrySQLFailureHandler
       }
     } while (doRetry);
 
-    if (!validConnection) {
+    if (!validConnection) {//链接无效
       throw new IOException("Failed to recover connection after " +
           retryAttempts + " retries. Giving up");
     }
@@ -149,6 +155,7 @@ public class BasicRetrySQLFailureHandler
 
   /**
    * Verify the provided connection is valid.
+   * true表示连接有效
    */
   protected boolean validateConnection(Connection connection)
       throws SQLException {
@@ -158,6 +165,7 @@ public class BasicRetrySQLFailureHandler
 
   /**
    * Close the given connection.
+   * 将连接销毁
    */
   protected void discardConnection(Connection connection) throws IOException {
     try {

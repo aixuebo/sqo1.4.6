@@ -27,6 +27,7 @@ import java.io.IOException;
 /**
  * Base sqoop mapper class that is convenient place for common functionality.
  * Other specific mappers are highly encouraged to inherit from this class.
+ * sqoop的map的基类
  */
 public abstract class SqoopMapper<KI, VI, KO, VO>
   extends Mapper<KI, VI, KO, VO> {

@@ -27,6 +27,7 @@ import java.io.IOException;
 /**
  * Base sqoop reducer class that is convenient place for common functionality.
  * Other specific reducers are highly encouraged to inherit from this class.
+ * sqoop的reduce基类
  */
 public abstract class SqoopReducer<KI, VI, KO, VO>
   extends Reducer<KI, VI, KO, VO> {

@@ -34,6 +34,9 @@ import com.cloudera.sqoop.mapreduce.db.DataDrivenDBInputFormat;
 
 /**
  * Implement DBSplitter over text strings.
+ * 详细解释查看IntegerSplitter类和DBSplitter类注释
+ *
+ * 一般都是按照整数进行主键拆分的,很少用字符串形式的,因此这个方法虽然相对来说不太容易读,但是可以看整数的实现类,参考他,大体可以知道本类是做什么用的
  */
 public class TextSplitter extends BigDecimalSplitter {
 
@@ -66,8 +69,8 @@ public class TextSplitter extends BigDecimalSplitter {
         + "this may result in a partial import or duplicate records.");
     LOG.warn("You are strongly encouraged to choose an integral split column.");
 
-    String minString = results.getString(1);
-    String maxString = results.getString(2);
+    String minString = results.getString(1);//最小值
+    String maxString = results.getString(2);//最大值
 
     boolean minIsNull = false;
 
@@ -79,7 +82,7 @@ public class TextSplitter extends BigDecimalSplitter {
       minIsNull = true;
     }
 
-    if (null == maxString) {
+    if (null == maxString) {//考虑is null的形式拆分
       // If the max string is null, then the min string has to be null too.
       // Just return a special split for this case.
       List<InputSplit> splits = new ArrayList<InputSplit>();
@@ -90,14 +93,14 @@ public class TextSplitter extends BigDecimalSplitter {
 
     // Use this as a hint. May need an extra task if the size doesn't
     // divide cleanly.
-    int numSplits = ConfigurationHelper.getConfNumMaps(conf);
+    int numSplits = ConfigurationHelper.getConfNumMaps(conf);//拆分多少个map任务
 
     String lowClausePrefix = colName + " >= " + (useNCharStrings ? "N'" : "'");
     String highClausePrefix = colName + " < " + (useNCharStrings ? "N'" : "'");
 
     // If there is a common prefix between minString and maxString, establish
     // it and pull it out of minString and maxString.
-    int maxPrefixLen = Math.min(minString.length(), maxString.length());
+    int maxPrefixLen = Math.min(minString.length(), maxString.length());//获取最大字符串的长度
     int sharedLen;
     for (sharedLen = 0; sharedLen < maxPrefixLen; sharedLen++) {
       char c1 = minString.charAt(sharedLen);
