@@ -52,6 +52,62 @@ import com.cloudera.sqoop.lib.SqoopRecord;
 /**
  * Creates an ORM class to represent a table from a database.
  * 创建一个数据库的表的java映射类
+ * private StringBuilder generateClassForColumns( 主运行类
+ * 
+ 自动生成的ORM表对应的java对象的某些方法:
+ 1.数据库表字段的set/get/with_id方法
+ 其中with_id方法是相当于set,只是返回值还是对象本身,用于链式访问
+ 2.该sqoop自动生成ORM映射的计算版本号方法
+ 3.equals方法 表示两个对象所有的属性值都相同,就返回true
+ 4.public void readFields(ResultSet __dbResults) throws SQLException {
+ 直接从查询的结果集中,为该对象的属性赋值
+ 例如
+ this.id = JdbcWritableBridge.readLong(1, __dbResults);
+ 5.public void write(PreparedStatement __dbStmt) throws SQLException {
+ 调用 write(__dbStmt, 0);
+ public int write(PreparedStatement __dbStmt, int __off) throws SQLException {
+ 将属性信息赋值到预编译sql的问号需要的参数值
+ 例如
+ JdbcWritableBridge.writeLong(id, 1 + __off, -5, __dbStmt);
+ 将id的值赋予第index个问号,-5表示数据库字段类型,__dbStmt表示正在处理的预编译对象。
+
+ 问题解答:
+ 找到sqoop中为什么export的时候 只是预编译少数几个字段,但是问号如何赋值的
+ 答案是必须全部字段都要导入进去,否则是不可以使用的,因为ORM的java类中,是按照顺序将所有字段都赋值的操作
+ 查看UpdateOutputFormat代码,
+ 因为getColumnTypes是根据sql来确定每一个属性以及对应的类型的,因此字段的顺序是根据sql来判断的
+ 因此可以保证自动生成的ORM的java对象的预编译?号也是根据该getColumnTypes方法返回的顺序执行的,因此就会没问题了
+
+ 6.  public void write(DataOutput __dataOut) throws IOException { hadoop的接口
+ 将所有属性信息写入到输出流中
+ 如果属性值为null,则赋值一个boolean类型的值为true,否则赋值正确类型的值即可
+ 例如
+ if (null == this.id) {
+ __dataOut.writeBoolean(true);
+ } else {
+ __dataOut.writeBoolean(false);
+ __dataOut.writeLong(this.id);
+ }
+ 6. public void readFields(DataInput __dataIn) throws IOException hadoop的read方法
+ 从输入流中读取数据,为属性赋值,读取的顺序与write写入顺序相同
+ 也是先判断是否是boolean,如果是true,则设置属性值为null,否则直接设置属性值即可。
+ 7.数据拆分对象
+ private static final DelimiterSet __outputDelimiters = new DelimiterSet((char) 1, (char) 10, (char) 0, (char) 0, false);
+ public DelimiterSet(char field, char record, char enclose, char escape,boolean isEncloseRequired) {
+ 8.toString方法
+ 返回每一个属性值,并且对每一个属性使用FieldFormatter.escapeAndEnclose(user_id==null?"null":user_id, delimiters)
+ 每一个属性使用属性分隔符分割
+ 每一行记录后,使用行分隔符
+ 9.将一行文本信息或者字节数组或者各种形式的数据,为该对象赋值
+ 例如
+ public void parse(Text __record) throws RecordParser.ParseError {
+ 表示参数是Text,将其内容转换成每一个属性的值,然后赋值给该对象
+ 10. public Map<String, Object> getFieldMap()
+ 返回该对象所有的属性和值的对应关系
+ 11.public void setField(String __fieldName, Object __fieldVal) 为该对象的某一个属性赋一个值
+ if ("id".equals(__fieldName)) {
+ this.id = (Long) __fieldVal;
+ }
  */
 public class ClassWriter {
 

@@ -31,6 +31,7 @@ import com.cloudera.sqoop.SqoopOptions;
  * database; its constructor is parameterized on the JDBC Driver
  * class to load.
  * 简单的通用获取连接对象,仅仅获取了一个连接器就可以
+ * 该方法就是通过驱动连接数据库,因此纯粹的java接口实现的,不能提供特殊功能,比如insert_update方法
  */
 public class GenericJdbcManager
     extends com.cloudera.sqoop.manager.SqlManager {

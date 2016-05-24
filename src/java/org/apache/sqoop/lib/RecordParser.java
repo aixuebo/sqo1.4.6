@@ -49,6 +49,8 @@ import org.apache.hadoop.io.Text;
  * The fields parsed by RecordParser are backed by an internal buffer
  * which is cleared when the next call to parseRecord() is made. If
  * the buffer is required to be preserved, you must copy it yourself.
+ *
+ * 对一行文本信息或者各种字节数组信息等数据类型的数据,解析这些数据,将其每一个属性值赋予给对应的属性
  */
 public class RecordParser {
 

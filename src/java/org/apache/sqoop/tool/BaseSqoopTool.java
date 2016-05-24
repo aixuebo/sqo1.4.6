@@ -183,7 +183,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
 
   // Arguments for all table imports.
   public static final String ALL_TABLE_EXCLUDES_ARG = "exclude-tables";//将一个数据库所有表都导入的时候,要排除一些表的时候使用该字段,table用逗号拆分
-
+//
   // HBase arguments.
   public static final String HBASE_TABLE_ARG = "hbase-table";
   public static final String HBASE_COL_FAM_ARG = "column-family";

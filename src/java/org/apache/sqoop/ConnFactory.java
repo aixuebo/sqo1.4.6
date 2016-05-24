@@ -128,6 +128,7 @@ public class ConnFactory {
     // the way sqoop was working originally. However we will inform
     // user that specifying connection manager explicitly is more cleaner
     // solution for this case.
+      //说明设置了driver,没有设置--connection-manager,则返回GenericJdbcManager,而他是没有实现update-insert方法的
     if (manualDriver != null && managerClassName == null) {
       LOG.warn("Parameter --driver is set to an explicit driver however"
         + " appropriate connection manager is not being set (via"

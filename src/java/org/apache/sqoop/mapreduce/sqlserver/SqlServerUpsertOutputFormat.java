@@ -35,6 +35,8 @@ import com.cloudera.sqoop.mapreduce.UpdateOutputFormat;
  * Update an existing table with new value if the table already
  * contains the row, or insert the data into the table if the table
  * does not contain the row yet.
+ * 对已经存在的数据,进行更新操作
+ * 不存在的则进行插入操作
  */
 public class SqlServerUpsertOutputFormat<K extends SqoopRecord, V>
     extends UpdateOutputFormat<K, V> {
