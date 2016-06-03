@@ -31,7 +31,7 @@ public class AutoProgressMapper<KEYIN, VALIN, KEYOUT, VALOUT>
   public static final String SLEEP_INTERVAL_KEY =
       org.apache.sqoop.mapreduce.AutoProgressMapper.SLEEP_INTERVAL_KEY;//每一次报道后睡眠时间
   public static final String REPORT_INTERVAL_KEY =
-      org.apache.sqoop.mapreduce.AutoProgressMapper.REPORT_INTERVAL_KEY;/报道时间间隔
+      org.apache.sqoop.mapreduce.AutoProgressMapper.REPORT_INTERVAL_KEY;//报道时间间隔
 
   //上面三个属性的默认值
   public static final int DEFAULT_SLEEP_INTERVAL =

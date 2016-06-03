@@ -44,7 +44,6 @@ public class GenericJdbcManager
 
   public GenericJdbcManager(final String driverClass, final SqoopOptions opts) {
     super(opts);
-
     this.jdbcDriverClass = driverClass;
   }
 

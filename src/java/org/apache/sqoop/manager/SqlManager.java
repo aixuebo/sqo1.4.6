@@ -330,8 +330,8 @@ public abstract class SqlManager
       ResultSetMetaData metadata = results.getMetaData();
       for (int i = 1; i < cols + 1; i++) {
         int typeId = metadata.getColumnType(i);//获取属性类型
-        int precision = metadata.getPrecision(i);//属性的整数位
-        int scale = metadata.getScale(i);//属性的小数点
+          int precision = metadata.getPrecision(i);//属性的整数位
+          int scale = metadata.getScale(i);//属性的小数点
 
         // If we have an unsigned int we need to make extra room by
         // plopping it into a bigint
