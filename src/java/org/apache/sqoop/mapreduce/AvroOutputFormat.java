@@ -36,7 +36,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import static org.apache.avro.file.DataFileConstants.DEFAULT_SYNC_INTERVAL;
 import static org.apache.avro.file.DataFileConstants.DEFLATE_CODEC;
-import static org.apache.avro.mapred.AvroOutputFormat.DEFAULT_DEFLATE_LEVEL;
 import static org.apache.avro.mapred.AvroOutputFormat.DEFLATE_LEVEL_KEY;
 import static org.apache.avro.mapred.AvroOutputFormat.EXT;
 import static org.apache.avro.mapred.AvroOutputFormat.SYNC_INTERVAL_KEY;
@@ -54,7 +53,7 @@ public class AvroOutputFormat<T>
     TaskAttemptContext context) throws UnsupportedEncodingException {
     if (FileOutputFormat.getCompressOutput(context)) {
       int level = context.getConfiguration()
-        .getInt(DEFLATE_LEVEL_KEY, DEFAULT_DEFLATE_LEVEL);
+        .getInt(DEFLATE_LEVEL_KEY, 1);
       String codecName = context.getConfiguration()
         .get(org.apache.avro.mapred.AvroJob.OUTPUT_CODEC, DEFLATE_CODEC);
       CodecFactory factory =

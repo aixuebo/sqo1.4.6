@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPClientConfig;
@@ -115,8 +114,8 @@ public final class MainframeFTPClientUtils {
       ftp.configure(config);
 
       if (conf.getBoolean(JobBase.PROPERTY_VERBOSE, false)) {
-        ftp.addProtocolCommandListener(new PrintCommandListener(
-            new PrintWriter(System.out), true));
+/*        ftp.addProtocolCommandListener(new PrintCommandListener(
+            new PrintWriter(System.out), true));*/
       }
       try {
         if (port > 0) {

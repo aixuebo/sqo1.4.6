@@ -36,7 +36,7 @@ import com.cloudera.sqoop.lib.ClobRef;
  * for use with Hadoop's Writable implementation. This supports null values
  * for all types.
  * 1.从ResultSet中获取每一个属性对应的值
- * 2.向预编译statement中设置value
+ * 2.向预编译statement中设置value  
  */
 public final class JdbcWritableBridge {
 
@@ -48,6 +48,10 @@ public final class JdbcWritableBridge {
   private JdbcWritableBridge() {
   }
 
+  public static String convertString(String value){
+	  return value == null ? null : value.trim();
+  }
+  
   public static Integer readInteger(int colNum, ResultSet r)
       throws SQLException {
     int val;
@@ -70,9 +74,9 @@ public final class JdbcWritableBridge {
   }
 
   public static String readString(int colNum, ResultSet r) throws SQLException {
-    return r.getString(colNum);
+    return convertString(r.getString(colNum));
   }
-
+  
   public static Float readFloat(int colNum, ResultSet r) throws SQLException {
     float val;
     val = r.getFloat(colNum);

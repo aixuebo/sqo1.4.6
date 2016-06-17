@@ -541,16 +541,19 @@ public class ExportJobBase extends JobBase {
     super.propagateOptionsToJob(job);
     Configuration conf = job.getConfiguration();
 
-    // This is export job where re-trying failed mapper mostly don't make sense. By
-    // default we will force MR to run only one attempt per mapper. User or connector
+    // This is export job where re-trying failed mapper mostly don't make sense. 
+    // 这是export任务,尝试对失败的mapper进行重试,几乎是没有意义的.
+    // By default we will force MR to run only one attempt per mapper. User or connector
     // developer can override this behavior by setting SQOOP_EXPORT_MAP_TASK_MAX_ATTEMTPS:
-    //
+    //我们会默认强制MR去为每一个mapper运行唯一的尝试任务,当然用户可以覆盖默认的行为
     // * Positive number - we will allow specified number of attempts
     // * Negative number - we will default to Hadoop's default number of attempts
-    //
+    // 整数会修改默认的尝试任务数量,负数依然使用默认的1个尝试任务
     // This is important for most connectors as they are directly committing data to
     // final table and hence re-running one mapper will lead to a misleading errors
     // of inserting duplicate rows.
+    //这个是很重要的,大多数人会直接提交数据到最终的表,
+    //因此重新运行一个mapper会导致一个令人误解的插入多个相同行的错误
     int sqoopMaxAttempts = conf.getInt(SQOOP_EXPORT_MAP_TASK_MAX_ATTEMTPS, 1);
     if (sqoopMaxAttempts > 1) {
       conf.setInt(HADOOP_MAP_TASK_MAX_ATTEMTPS, sqoopMaxAttempts);
