@@ -52,6 +52,8 @@ import com.cloudera.sqoop.lib.SqoopRecord;
 /**
  * Creates an ORM class to represent a table from a database.
  * 创建一个数据库的表的java映射类
+ * 入口方法generate被调用,然后执行generateClassForColumns方法
+ * 即
  * private StringBuilder generateClassForColumns( 主运行类
  * 
  自动生成的ORM表对应的java对象的某些方法:
@@ -424,6 +426,7 @@ public class ClassWriter {
     }
   }
 
+  //如果属性经过readField处理后,依然是null,即colName==null?"this.options.getNullStringValue()":create_date
   private String stringifierForType(String javaType, String colName) {
     if (javaType.equals("String")) {
       // Check if it is null, and write the null representation in such case
@@ -624,13 +627,14 @@ public class ClassWriter {
       String [] colNames, String className, StringBuilder sb) {
 
     for (String col : colNames) {
-      int sqlType = columnTypes.get(col);
-      String javaType = toJavaType(col, sqlType);
+      int sqlType = columnTypes.get(col);//获取列对应的类型
+      String javaType = toJavaType(col, sqlType);//通过列类型获取对应的java类型
       if (null == javaType) {
         LOG.error("Cannot resolve SQL type " + sqlType);
         continue;
       }
 
+      //声明一个java的属性,以及set/get方法
       sb.append("  private " + javaType + " " + col + ";\n");
       sb.append("  public " + javaType + " get_" + col + "() {\n");
       sb.append("    return " + col + ";\n");
@@ -946,22 +950,23 @@ public class ClassWriter {
 
     for (int i = methodNumber * size;
          i < topBoundary(colNames, methodNumber, size); ++i) {
-      String col = colNames[i];
+      String col = colNames[i];//列名称
 
-      int sqlType = columnTypes.get(col);
-      String javaType = toJavaType(col, sqlType);
+      int sqlType = columnTypes.get(col);//列对应的数据库类型
+      String javaType = toJavaType(col, sqlType);//列对应的java类型
       if (null == javaType) {
         LOG.error("No Java type for SQL type " + sqlType
             + " for column " + col);
         continue;
       }
 
-      String setterMethod = dbSetterForType(javaType);
+      String setterMethod = dbSetterForType(javaType);//比如类型是String,则生成writeString方法
       if (null == setterMethod) {
         LOG.error("No db setter method for Java type " + javaType);
         continue;
       }
 
+      //调用JdbcWritableBridge.writeString方法即可
       sb.append("    JdbcWritableBridge." + setterMethod + "(" + col + ", "
           + (i + 1) + " + __off, " + sqlType + ", __dbStmt);\n");
     }
