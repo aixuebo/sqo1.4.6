@@ -107,7 +107,7 @@ public class HiveImport {
     String hiveBinStr = p.toString();
     if (new File(hiveBinStr).exists()) {
       return hiveBinStr;
-    } else {
+    } else {//不存在全路径,就执行hive命令,如果此时有环境变量的话,也是可以使用的
       return hiveCommand;
     }
   }
@@ -279,13 +279,13 @@ public class HiveImport {
     try {
       if (outputPath != null && fs.exists(outputPath)) {
         FileStatus[] statuses = fs.listStatus(outputPath);
-        if (statuses.length == 0) {
+        if (statuses.length == 0) {//没有文件内容,则可以删除
           LOG.info("Export directory is empty, removing it.");
           fs.delete(outputPath, true);
-        } else if (statuses.length == 1 && statuses[0].getPath().getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)) {
+        } else if (statuses.length == 1 && statuses[0].getPath().getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)) {//说明是只有成功文件夹,因此可以删除
           LOG.info("Export directory is contains the _SUCCESS file only, removing the directory.");
           fs.delete(outputPath, true);
-        } else {
+        } else {//说明文件夹下有内容,要保持不删除
           LOG.info("Export directory is not empty, keeping it.");
         }
       }
@@ -381,6 +381,8 @@ public class HiveImport {
    * @param filename the Script file to run.
    * @param env the environment strings to pass to any subprocess.
    * @throws IOException if Hive did not exit successfully.
+   * 使用hive执行一个脚本文件
+   * 即hive -f 文件全路径  环境变量
    */
   private void executeExternalHiveScript(String filename, List<String> env)
       throws IOException {

@@ -314,7 +314,9 @@ public abstract class SqoopTool {
   /** The name of the current tool. 当前使用什么工具*/
   private String toolName;
 
-  /** Arguments that remained unparsed after parseArguments. */
+  /** Arguments that remained unparsed after parseArguments. 
+   * 额外的参数
+   **/
   protected String [] extraArguments;
 
   public SqoopTool() {

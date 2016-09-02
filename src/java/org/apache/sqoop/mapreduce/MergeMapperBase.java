@@ -42,7 +42,7 @@ public class MergeMapperBase<INKEY, INVAL>
   public static final Log LOG = LogFactory.getLog(
       MergeMapperBase.class.getName());
 
-  private String keyColName; // name of the key column.合并的属性
+  private String keyColName; // name of the key column.合并的属性,仅能是一个属性
   private boolean isNew; // true if this split is from the new dataset. 新数据还是老数据文件
 
   @Override
@@ -57,10 +57,10 @@ public class MergeMapperBase<INKEY, INVAL>
 
     //根据输入源判断是新数据还是老数据文件
     if (splitPath.toString().startsWith(
-        conf.get(MergeJob.MERGE_NEW_PATH_KEY))) {
+        conf.get(MergeJob.MERGE_NEW_PATH_KEY))) {//说明是新文件
       this.isNew = true;
     } else if (splitPath.toString().startsWith(
-        conf.get(MergeJob.MERGE_OLD_PATH_KEY))) {
+        conf.get(MergeJob.MERGE_OLD_PATH_KEY))) {//说明是老文件
       this.isNew = false;
     } else {
       throw new IOException("File " + splitPath + " is not under new path "

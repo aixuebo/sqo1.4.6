@@ -38,6 +38,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -54,27 +55,52 @@ import org.apache.commons.logging.LogFactory;
 // CHECKSTYLE:OFF
 
 /**
+ * 该类用于export的时候使用
+ * 因为export的时候要合并多个输入源,合并成-m参数个文件即可
  * An abstract {@link InputFormat} that returns {@link CombineFileSplit}'s in
  * {@link InputFormat#getSplits(JobContext)} method.
- *
+ * 一个抽象类,用于在InputFormat的getSplits方法的时候,返回一个合并后的split,每一个合并后的split要会被每一个-m对应的map处理
+ * 
  * Splits are constructed from the files under the input paths.
  * A split cannot have files from different pools.
  * Each split returned may contain blocks from different files.
+ * 
  * If a maxSplitSize is specified, then blocks on the same node are
  * combined to form a single split. Blocks that are left over are
  * then combined with other blocks in the same rack.
+ * 
  * If maxSplitSize is not specified, then blocks from the same rack
  * are combined in a single split; no attempt is made to create
  * node-local splits.
+ * 
  * If the maxSplitSize is equal to the block size, then this class
  * is similar to the default splitting behavior in Hadoop: each
  * block is a locally processed split.
+ * 
  * Subclasses implement
  * {@link InputFormat#createRecordReader(InputSplit, TaskAttemptContext)}
  * to construct <code>RecordReader</code>'s for
  * <code>CombineFileSplit</code>'s.
  *
  * @see CombineFileSplit
+ * export原理
+ * 当设置-m = 3的时候,说明最终有3个进程去导入到mysql中
+ * 而输入源可能有若干个文件,我们需要进行数据源合并操作
+ * a.ExportJobBase--在读取数据输入源的时候调用getInputFormatClass方法,创建ExportInputFormat对象
+ * b.ExportInputFormat对象
+ *  实现了List<InputSplit> getSplits(JobContext job)方法,对数据源进行合并成我们期望的最终数据块
+ *  该实现类创建了CombineFileInputFormat对象
+ * c.CombineFileInputFormat对象对输入源进行合并,按照最大多少字节合并成一个数据块进行合并操作即可。
+ * 因此当用户输入-m=3的时候,最终就生成了3个数据块进行操作
+ * 
+ * import原理
+ * 当设置m=10的时候,是用10个map去抓去数据的,每一个map抓取的sql不一样
+ * a.用sql查询最大值和最小值
+ * b.用最大值和最小值和m=10去等分成10份
+ * c.每一个任务的抓去sql有>=和<=,因此每一个split被拆分成区间sql,去抓去数据
+ * 问题:
+ * 当按照字段进行划分区间等分的时候,如果id不是连续的,就会产生有一些split抓去的数据很快,一些抓去的很慢,从而影响了总任务的进程
+ * 
  */
 public abstract class CombineFileInputFormat<K, V>
   extends FileInputFormat<K, V> {
@@ -195,6 +221,7 @@ public abstract class CombineFileInputFormat<K, V>
     } else {
       maxSize = conf.getLong("mapred.max.split.size", 0);
     }
+    
     if (minSizeNode != 0 && maxSize != 0 && minSizeNode > maxSize) {
       throw new IOException("Minimum split size pernode " + minSizeNode +
                             " cannot be larger than maximum split size " +
@@ -211,7 +238,7 @@ public abstract class CombineFileInputFormat<K, V>
                             "size per rack " + minSizeRack);
     }
 
-    // all the files in input set
+    // all the files in input set 先获取所有数据输入源路径集合
     Path[] paths = FileUtil.stat2Paths(
                      listStatus(job).toArray(new FileStatus[0]));
     List<InputSplit> splits = new ArrayList<InputSplit>();
@@ -486,10 +513,11 @@ public abstract class CombineFileInputFormat<K, V>
 
   /**
    * information about one file from the File System
+   * 表示一个文件系统上的一个文件
    */
   private static class OneFileInfo {
-    private long fileSize;               // size of the file
-    private OneBlockInfo[] blocks;       // all blocks in this file
+    private long fileSize;               // size of the file 该文件的总大小
+    private OneBlockInfo[] blocks;       // all blocks in this file 该文件对应的所有数据块集合
 
     OneFileInfo(Path path, Configuration conf,
                 boolean isSplitable,
@@ -504,6 +532,7 @@ public abstract class CombineFileInputFormat<K, V>
       // get block locations from file system
       FileSystem fs = path.getFileSystem(conf);
       FileStatus stat = fs.getFileStatus(path);
+      
       BlockLocation[] locations = fs.getFileBlockLocations(stat, 0,
                                                            stat.getLen());
       // create a list of all block and their locations
@@ -612,13 +641,14 @@ public abstract class CombineFileInputFormat<K, V>
 
   /**
    * information about one block from the File System
+   * 代表文件系统上的一个数据块,因为如果该文件很大的时候,该文件可能对应多个数据块
    */
   private static class OneBlockInfo {
-    Path onepath;                // name of this file
-    long offset;                 // offset in file
-    long length;                 // length of this block
-    String[] hosts;              // nodes on which this block resides
-    String[] racks;              // network topology of hosts
+    Path onepath;                // name of this file该数据块所属文件路径
+    long offset;                 // offset in file 该数据块在该文件的起始位置
+    long length;                 // length of this block 该数据块的长度
+    String[] hosts;              // nodes on which this block resides 该数据块在哪些host上
+    String[] racks;              // network topology of hosts 该数据块在哪些rack上
 
     OneBlockInfo(Path path, long offset, long len,
                  String[] hosts, String[] topologyPaths) {
