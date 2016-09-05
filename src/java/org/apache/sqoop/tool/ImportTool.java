@@ -479,9 +479,9 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         if (mergeJob.runMergeJob()) {
           // Rename destination directory to proper location.
           Path tmpDir = getOutputPath(options, context.getTableName());
-          fs.rename(userDestDir, tmpDir);//将原有老的目录替换到temp目录下
-          fs.rename(destDir, userDestDir);//替换最终新的目录
-          fs.delete(tmpDir, true);//删除老的temp版本目录
+          boolean b = fs.rename(userDestDir, tmpDir);//将原有老的目录替换到temp目录下
+          b = fs.rename(destDir, userDestDir);//替换最终新的目录
+          b = fs.delete(tmpDir, true);//删除老的temp版本目录
         } else {
           LOG.error("Merge MapReduce job failed!");
         }
