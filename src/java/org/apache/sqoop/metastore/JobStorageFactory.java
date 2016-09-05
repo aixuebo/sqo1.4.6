@@ -36,13 +36,13 @@ public class JobStorageFactory {
   /**
    * Configuration key describing the list of JobStorage implementations
    * to use to handle jobs.
-   * 查看job存储用什么实现
+   * 查看job存储用什么实现,配置文件的key
    */
   public static final String AVAILABLE_STORAGES_KEY =
       "sqoop.job.storage.implementations";
 
   /** The default list of available JobStorage implementations.
-   * 默认的两个实现job存储的实现方案
+   * 默认的两个实现job存储的实现方案,配置文件的value
    **/
   private static final String DEFAULT_AVAILABLE_STORAGES =
       "com.cloudera.sqoop.metastore.hsqldb.HsqldbJobStorage,"
@@ -53,6 +53,7 @@ public class JobStorageFactory {
     this.conf = config;
 
     // Ensure that we always have an available storages list.
+    //默认初始化该key=value
     if (this.conf.get(AVAILABLE_STORAGES_KEY) == null) {
       this.conf.set(AVAILABLE_STORAGES_KEY, DEFAULT_AVAILABLE_STORAGES);
     }

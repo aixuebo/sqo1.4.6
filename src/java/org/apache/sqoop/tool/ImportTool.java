@@ -912,7 +912,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
           out.setTableName(in.getOptionValue(TABLE_ARG));
         }
 
-        if (in.hasOption(COLUMNS_ARG)) {
+        if (in.hasOption(COLUMNS_ARG)) {//columns参数 按照逗号拆分的集合
           String[] cols= in.getOptionValue(COLUMNS_ARG).split(",");
           for (int i=0; i<cols.length; i++) {
             cols[i] = cols[i].trim();
@@ -928,7 +928,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
           out.setWhereClause(in.getOptionValue(WHERE_ARG));
         }
 
-        if (in.hasOption(TARGET_DIR_ARG)) {
+        if (in.hasOption(TARGET_DIR_ARG)) {//target-dir参数内容
           out.setTargetDir(in.getOptionValue(TARGET_DIR_ARG));
         }
 
@@ -940,7 +940,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
           out.setDeleteMode(true);
         }
 
-        if (in.hasOption(SQL_QUERY_ARG)) {
+        if (in.hasOption(SQL_QUERY_ARG)) { //query
           out.setSqlQuery(in.getOptionValue(SQL_QUERY_ARG));
         }
 
@@ -955,7 +955,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         applyValidationOptions(in, out);
       }
 
-      if (in.hasOption(WAREHOUSE_DIR_ARG)) {
+      if (in.hasOption(WAREHOUSE_DIR_ARG)) {//warehouse-dir参数内容
         out.setWarehouseDir(in.getOptionValue(WAREHOUSE_DIR_ARG));
       }
 
@@ -987,7 +987,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         out.setUseCompression(true);
       }
 
-      if (in.hasOption(COMPRESSION_CODEC_ARG)) {
+      if (in.hasOption(COMPRESSION_CODEC_ARG)) {//参数compression-codec的内容
         out.setCompressionCodec(in.getOptionValue(COMPRESSION_CODEC_ARG));
       }
 

@@ -52,17 +52,23 @@ public final class OptionsFileUtil {
    * @param args the given arguments
    * @return a new string array that contains the expanded arguments.
    * @throws Exception
+   *
+   * 读取--options-file filename参数内容
+   * 1.##是文件内的备注,不会被处理
+   * 2.每一行内容作为字符串,移除单引号和双引号后,添加到数组中
+   * 3.如果不是读取的--options-file参数,则参数内容正常写入数组
+   *
    */
   public static String[] expandArguments(String[] args) throws Exception {
     List<String> options = new ArrayList<String>();
 
     for (int i = 0; i < args.length; i++) {
-      if (args[i].equals(Sqoop.SQOOP_OPTIONS_FILE_SPECIFIER)) {
-        if (i == args.length - 1) {
+      if (args[i].equals(Sqoop.SQOOP_OPTIONS_FILE_SPECIFIER)) {//--options-file参数
+        if (i == args.length - 1) {//不能是最后一个参数,后面要跟随一个文件路径
           throw new Exception("Missing options file");
         }
 
-        String fileName = args[++i];
+        String fileName = args[++i];//文件路径
         File optionsFile = new File(fileName);
         BufferedReader reader = null;
         StringBuilder buffer = new StringBuilder();
@@ -77,7 +83,7 @@ public final class OptionsFileUtil {
             }
 
             buffer.append(nextLine);
-            if (nextLine.endsWith("\\")) {
+            if (nextLine.endsWith("\\")) {//如果文件内容是\\结束的
               if (buffer.charAt(0) == '\'' || buffer.charAt(0) == '"') {
                 throw new Exception(
                     "Multiline quoted strings not supported in file("
@@ -87,6 +93,7 @@ public final class OptionsFileUtil {
               buffer.deleteCharAt(buffer.length()  - 1);
             } else {
               // The buffer contains a full option
+              //移除单引号或者双引号
               options.add(
                   removeQuotesEncolosingOption(fileName, buffer.toString()));
               buffer.delete(0, buffer.length());
@@ -128,19 +135,20 @@ public final class OptionsFileUtil {
    * @param option
    * @return
    * @throws Exception
+   * 移除单引号或者双引号
    */
   private static String removeQuotesEncolosingOption(
       String fileName, String option) throws Exception {
 
     // Attempt to remove double quotes. If successful, return.
-    String option1 = removeQuoteCharactersIfNecessary(fileName, option, '"');
-    if (!option1.equals(option)) {
+    String option1 = removeQuoteCharactersIfNecessary(fileName, option, '"');//移除双引号
+    if (!option1.equals(option)) {//不相等,说明移除成功
       // Quotes were successfully removed
       return option1;
     }
 
     // Attempt to remove single quotes.
-    return removeQuoteCharactersIfNecessary(fileName, option, '\'');
+    return removeQuoteCharactersIfNecessary(fileName, option, '\'');//移除单引号
   }
 
   /**
@@ -152,6 +160,7 @@ public final class OptionsFileUtil {
    * @param quote
    * @return
    * @throws Exception
+   * 同时移除option参数中第一个和最后一个字符是quote的内容,一般用于移除引号
    */
   private static String removeQuoteCharactersIfNecessary(String fileName,
       String option, char quote) throws Exception {

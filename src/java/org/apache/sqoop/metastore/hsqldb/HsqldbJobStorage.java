@@ -116,9 +116,9 @@ public class HsqldbJobStorage extends JobStorage {
    **/
   private static final String PROPERTY_SET_KEY =
       "sqoop.property.set.id";
+    /** Current value for PROPERTY_SET_KEY. */
+    private static final String CUR_PROPERTY_SET_ID = "0";
 
-  /** Current value for PROPERTY_SET_KEY. */
-  private static final String CUR_PROPERTY_SET_ID = "0";
 
   // The following are values for propClass in the v0 schema which
   // describe different aspects of the stored metadata.
@@ -229,7 +229,7 @@ public class HsqldbJobStorage extends JobStorage {
         throw new IOException("Invalid metadata version.");
       }
 
-      // Initialize the versioned schema.
+      // Initialize the versioned schema. 创建存储job的数据库表
       initV0Schema();
     } catch (SQLException sqle) {
       if (null != connection) {
@@ -717,7 +717,7 @@ public class HsqldbJobStorage extends JobStorage {
    * 创建job的数据库
    */
   private void initV0Schema() throws SQLException {
-    this.jobTableName = getRootProperty(SESSION_TABLE_KEY, 0);
+    this.jobTableName = getRootProperty(SESSION_TABLE_KEY, 0);//获取存储当前job的表名字
     if (null == this.jobTableName) {
       createJobTable();
     }

@@ -105,7 +105,7 @@ public class SqoopOptions implements Cloneable {
 
   @StoredAsProperty("db.connect.string") private String connectString;
   @StoredAsProperty("db.table") private String tableName;
-  private String [] columns; // Array stored as db.column.list.
+  private String [] columns; // Array stored as db.column.list. columns参数 按照逗号拆分的集合
   @StoredAsProperty("db.username") private String username;
   @StoredAsProperty("db.export.staging.table") private String stagingTableName;
   @StoredAsProperty("db.clear.staging.table") private boolean clearStagingTable;
@@ -138,10 +138,10 @@ public class SqoopOptions implements Cloneable {
   private String hadoopMapRedHome; // not serialized to metastore.
   @StoredAsProperty("db.split.column") private String splitByCol;
   @StoredAsProperty("db.where.clause") private String whereClause;//sql的where条件,没有where关键字,直接写上条件即可
-  @StoredAsProperty("db.query") private String sqlQuery;//纯粹的一个sql语句
+  @StoredAsProperty("db.query") private String sqlQuery;//纯粹的一个sql语句  query参数的内容
   @StoredAsProperty("db.query.boundary") private String boundaryQuery;
   @StoredAsProperty("jdbc.driver.class") private String driverClassName;
-  @StoredAsProperty("hdfs.warehouse.dir") private String warehouseDir;//存储hdfs的父目录,所有table都是在该目录下进行存储的
+  @StoredAsProperty("hdfs.warehouse.dir") private String warehouseDir;//存储hdfs的父目录,所有table都是在该目录下进行存储的  warehouse-dir参数内容
   @StoredAsProperty("hdfs.target.dir") private String targetDir;//存储在HDFS的哪个目录下
   @StoredAsProperty("hdfs.append.dir") private boolean append;
   @StoredAsProperty("hdfs.delete-target.dir") private boolean delete;//是否要先删除目录
@@ -151,18 +151,18 @@ public class SqoopOptions implements Cloneable {
   private String tmpDir; // where temp data goes; usually /tmp; not serialized.
   private String hiveHome; // not serialized to metastore.
   @StoredAsProperty("hive.import") private boolean hiveImport;//true表示结果要导入到hive中
-  @StoredAsProperty("hive.overwrite.table") private boolean overwriteHiveTable;
+  @StoredAsProperty("hive.overwrite.table") private boolean overwriteHiveTable;//hive-overwrite参数设置
   @StoredAsProperty("hive.fail.table.exists")
   private boolean failIfHiveTableExists;
   @StoredAsProperty("hive.table.name") private String hiveTableName;//hive的表名字
-  @StoredAsProperty("hive.database.name") private String hiveDatabaseName;//hive的仓库名
+  @StoredAsProperty("hive.database.name") private String hiveDatabaseName;//hive的仓库名  hive-database参数内容
   @StoredAsProperty("hive.drop.delims") private boolean hiveDropDelims;
   @StoredAsProperty("hive.delims.replacement")
   private String hiveDelimsReplacement;
 
   //PARTITION ($key='$value')这部分代码
-  @StoredAsProperty("hive.partition.key") private String hivePartitionKey;//hive按照什么key分区
-  @StoredAsProperty("hive.partition.value") private String hivePartitionValue;//hive按照key分区后,值是什么
+  @StoredAsProperty("hive.partition.key") private String hivePartitionKey;//hive按照什么key分区  //hive-partition-key参数内容
+  @StoredAsProperty("hive.partition.value") private String hivePartitionValue;//hive按照key分区后,值是什么  //hive-partition-key参数内容
   @StoredAsProperty("hcatalog.table.name")
   private String hCatTableName;
   @StoredAsProperty("hcatalog.database.name")
@@ -179,7 +179,7 @@ public class SqoopOptions implements Cloneable {
     private String hCatalogPartitionValues;
   // User explicit mapping of types
   private Properties mapColumnJava; // stored as map.colum.java
-  private Properties mapColumnHive; // stored as map.column.hive 存储hive的属性映射关系
+  private Properties mapColumnHive; // stored as map.column.hive 存储hive的属性映射关系,map-column-hive参数,用于表示设置每一个数据库属性对应的hive类型,格式${column}=${hive}
 
   // An ordered list of column names denoting what order columns are
   // serialized to a PreparedStatement from a generated record type.
@@ -199,7 +199,7 @@ public class SqoopOptions implements Cloneable {
 
   @StoredAsProperty("mapreduce.num.mappers") private int numMappers;
   @StoredAsProperty("enable.compression") private boolean useCompression;
-  @StoredAsProperty("compression.codec") private String compressionCodec;
+  @StoredAsProperty("compression.codec") private String compressionCodec;//参数compression-codec的内容
 
   // In direct mode, open a new stream every X bytes.
   @StoredAsProperty("import.direct.split.size") private long directSplitSize;
@@ -655,9 +655,9 @@ public class SqoopOptions implements Cloneable {
 
     // Loading user mapping
     this.mapColumnHive =
-            getPropertiesAsNetstedProperties(props, "map.column.hive");
+            getPropertiesAsNetstedProperties(props, "map.column.hive");//在props中加载map.column.hive.${column}=${hive}的类型,返回值是${column}=${hive}
     this.mapColumnJava =
-            getPropertiesAsNetstedProperties(props, "map.column.java");
+            getPropertiesAsNetstedProperties(props, "map.column.java");//在props中加载map.column.java.${column}=${java}的类型,返回值是${column}=${java}
 
     // Delimiters were previously memoized; don't let the tool override
     // them with defaults.
@@ -848,6 +848,9 @@ public class SqoopOptions implements Cloneable {
    * the only client of this directory. If this directory is not
    * used during the lifetime of the JVM, schedule it to be removed
    * when the JVM exits.
+   * 返回一个目录的名字,该目录在调用该方法前是不存在的目录
+   *
+   * 参数的结果是tmpBase/MD5
    */
   private static String getNonceJarDir(String tmpBase) {
 
@@ -1668,6 +1671,7 @@ public class SqoopOptions implements Cloneable {
   /**
    * @return the character to print between fields when importing them to
    * text.
+   * fields-terminated-by参数内容
    */
   public char getOutputFieldDelim() {
     return this.outputDelimiters.getFieldsTerminatedBy();

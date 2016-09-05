@@ -133,9 +133,9 @@ public class IntegerSplitter implements DBSplitter  {
       // splitSize + minVal will always be <= maxVal.  We then use the remainder
       // and add 1 if the current split index is less than the < the remainder.
       // This is guaranteed to add up to remainder and not surpass the value.
-      long splitSize = (maxVal - minVal) / numSplits;//计算每一个map执行的区间
+      long splitSize = (maxVal - minVal) / numSplits;//计算每一个map执行多少条数据
       long remainder = (maxVal - minVal) % numSplits;//计算余数
-      long curVal = minVal;
+      long curVal = minVal;//从最小值开始执行
 
       // This will honor numSplits as long as split size > 0.  If split size is
       // 0, it will have remainder splits.
@@ -150,7 +150,7 @@ public class IntegerSplitter implements DBSplitter  {
 
       if (splits.size() == 1) {
         // make a valid singleton split
-        splits.add(maxVal);
+          splits.add(maxVal);
       } else if ((maxVal - minVal) <= numSplits) {
         // Edge case when there is lesser split points (intervals) then
         // requested number of splits. In such case we are creating last split

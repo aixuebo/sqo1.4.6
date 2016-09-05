@@ -244,7 +244,7 @@ public class HiveImport {
       }
 
       if (!isGenerateOnly()) {//如果是false,表示要执行该建表语法和导入语法
-        executeScript(filename, env);//执行
+        executeScript(filename, env);//执行ddl文件
 
         LOG.info("Hive import complete.");
 
@@ -252,7 +252,7 @@ public class HiveImport {
       }
     } finally {
       if (!isGenerateOnly()) {
-        // User isn't interested in saving the DDL. Remove the file.
+        // User isn't interested in saving the DDL. Remove the file.删除ddl文件,因为用户不关注这个ddl文件是什么
         if (!scriptFile.delete()) {
           LOG.warn("Could not remove temporary file: " + scriptFile.toString());
           // try to delete the file later.
@@ -317,7 +317,7 @@ public class HiveImport {
       return;
     }
 
-    try {
+    try {//使用hive的内置class类的main方法,执行hive脚本, -f filename
       Class cliDriverClass = Class.forName(HIVE_MAIN_CLASS);
 
       // We loaded the CLI Driver in this JVM, so we will just
@@ -342,8 +342,9 @@ public class HiveImport {
       mainMethod.invoke(null, (Object) argArray);
 
     } catch (ClassNotFoundException cnfe) {
+      //使用hive的全路径执行脚本文件
       // Hive is not on the classpath. Run externally.
-      // This is not an error path.
+        // This is not an error path.
       LOG.debug("Using external Hive process.");
       executeExternalHiveScript(filename, env);
     } catch (NoSuchMethodException nsme) {

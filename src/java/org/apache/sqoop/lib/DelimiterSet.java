@@ -24,7 +24,7 @@ public class DelimiterSet implements Cloneable {
 
   public static final char NULL_CHAR = '\000';
 
-  private char fieldDelim; // fields terminated by this.
+  private char fieldDelim; // fields terminated by this.  //fields-terminated-by参数内容
   private char recordDelim; // records terminated by this.
 
   // If these next two fields are '\000', then they are ignored.

@@ -169,7 +169,7 @@ public class MergeTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       out.setMergeOldPath(in.getOptionValue(OLD_DATASET_ARG));
     }
 
-    if (in.hasOption(TARGET_DIR_ARG)) {
+    if (in.hasOption(TARGET_DIR_ARG)) {//target-dir参数内容
       out.setTargetDir(in.getOptionValue(TARGET_DIR_ARG));
     }
 

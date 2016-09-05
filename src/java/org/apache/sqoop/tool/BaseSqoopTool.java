@@ -104,7 +104,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
 
   public static final String HIVE_IMPORT_ARG = "hive-import";
   public static final String HIVE_TABLE_ARG = "hive-table";//hive的表名字
-  public static final String HIVE_DATABASE_ARG = "hive-database";//数据库名字
+  public static final String HIVE_DATABASE_ARG = "hive-database";//数据库名字 hive-database参数内容
   public static final String HIVE_OVERWRITE_ARG = "hive-overwrite";//覆盖hive的数据
   public static final String HIVE_DROP_DELIMS_ARG = "hive-drop-import-delims";
   public static final String HIVE_DELIMS_REPLACEMENT_ARG =
@@ -116,7 +116,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   public static final String HCATALOG_PARTITION_VALUES_ARG =
       "hcatalog-partition-values";
   public static final String CREATE_HIVE_TABLE_ARG =
-      "create-hive-table";
+      "create-hive-table"; //create-hive-table参数内容
   public static final String HCATALOG_TABLE_ARG = "hcatalog-table";
   public static final String HCATALOG_DATABASE_ARG = "hcatalog-database";
   public static final String CREATE_HCATALOG_TABLE_ARG =
@@ -1098,11 +1098,11 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
       out.setHiveImport(true);
     }
 
-    if (in.hasOption(HIVE_OVERWRITE_ARG)) {
+    if (in.hasOption(HIVE_OVERWRITE_ARG)) {//hive-overwrite参数设置
       out.setOverwriteHiveTable(true);
     }
 
-    if (in.hasOption(CREATE_HIVE_TABLE_ARG)) {
+    if (in.hasOption(CREATE_HIVE_TABLE_ARG)) {//create-hive-table参数内容
       out.setFailIfHiveTableExists(true);
     }
 
@@ -1110,7 +1110,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
       out.setHiveTableName(in.getOptionValue(HIVE_TABLE_ARG));
     }
 
-    if (in.hasOption(HIVE_DATABASE_ARG)) {
+    if (in.hasOption(HIVE_DATABASE_ARG)) { //hive-database参数内容
       out.setHiveDatabaseName(in.getOptionValue(HIVE_DATABASE_ARG));
     }
 
@@ -1173,15 +1173,15 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
         in.getOptionValue(HCATALOG_PARTITION_VALUES_ARG));
     }
 
-    if (in.hasOption(HIVE_PARTITION_KEY_ARG)) {
+    if (in.hasOption(HIVE_PARTITION_KEY_ARG)) {//hive-partition-key参数内容
       out.setHivePartitionKey(in.getOptionValue(HIVE_PARTITION_KEY_ARG));
     }
 
-    if (in.hasOption(HIVE_PARTITION_VALUE_ARG)) {
+    if (in.hasOption(HIVE_PARTITION_VALUE_ARG)) {//hive-partition-value参数内容
       out.setHivePartitionValue(in.getOptionValue(HIVE_PARTITION_VALUE_ARG));
     }
 
-    if (in.hasOption(MAP_COLUMN_HIVE)) {
+    if (in.hasOption(MAP_COLUMN_HIVE)) { //map-column-hive参数,用于表示设置每一个数据库属性对应的hive类型,格式${column}=${hive}
       out.setMapColumnHive(in.getOptionValue(MAP_COLUMN_HIVE));
     }
 
@@ -1190,13 +1190,13 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
 
   protected void applyOutputFormatOptions(CommandLine in, SqoopOptions out)
       throws InvalidOptionsException {
-    if (in.hasOption(FIELDS_TERMINATED_BY_ARG)) {
+    if (in.hasOption(FIELDS_TERMINATED_BY_ARG)) {//fields-terminated-by参数内容
       out.setFieldsTerminatedBy(SqoopOptions.toChar(
           in.getOptionValue(FIELDS_TERMINATED_BY_ARG)));
       out.setExplicitOutputDelims(true);
     }
 
-    if (in.hasOption(LINES_TERMINATED_BY_ARG)) {
+    if (in.hasOption(LINES_TERMINATED_BY_ARG)) {//参数lines-terminated-by内容
       out.setLinesTerminatedBy(SqoopOptions.toChar(
           in.getOptionValue(LINES_TERMINATED_BY_ARG)));
       out.setExplicitOutputDelims(true);

@@ -60,7 +60,7 @@ public class Sqoop extends Configured implements Tool {
 
   private SqoopTool tool;
   private SqoopOptions options;
-  private String [] childPrgmArgs;
+  private String [] childPrgmArgs;//--开始之后的参数集合
 
   /**
    * Creates a new instance of Sqoop set to run the supplied SqoopTool
@@ -128,9 +128,9 @@ public class Sqoop extends Configured implements Tool {
     }
 
     try {
-      options = tool.parseArguments(args, null, options, false);
-      tool.appendArgs(this.childPrgmArgs);
-      tool.validateOptions(options);
+      options = tool.parseArguments(args, null, options, false);//解析--之前的参数
+      tool.appendArgs(this.childPrgmArgs);//添加--之后的参数
+      tool.validateOptions(options);//校验参数是否合法
     } catch (Exception e) {
       // Couldn't parse arguments.
       // Log the stack trace for this exception
@@ -152,6 +152,7 @@ public class Sqoop extends Configured implements Tool {
    * later.
    * @param argv the argv in to the SqoopTool
    * @return the argv with a "--" and any subsequent arguments removed.
+   * 返回--开始之前的参数集合
    */
   private String [] stashChildPrgmArgs(String [] argv) {
     for (int i = 0; i < argv.length; i++) {
@@ -175,7 +176,7 @@ public class Sqoop extends Configured implements Tool {
    */
   public static int runSqoop(Sqoop sqoop, String [] args) {
     try {
-      String [] toolArgs = sqoop.stashChildPrgmArgs(args);
+      String [] toolArgs = sqoop.stashChildPrgmArgs(args);//返回--开始之前的参数集合
       return ToolRunner.run(sqoop.getConf(), sqoop, toolArgs);
     } catch (Exception e) {
       LOG.error("Got exception running Sqoop: " + e.toString());
@@ -196,7 +197,7 @@ public class Sqoop extends Configured implements Tool {
     // Expand the options
     String[] expandedArgs = null;
     try {
-      expandedArgs = OptionsFileUtil.expandArguments(args);
+      expandedArgs = OptionsFileUtil.expandArguments(args);//加载--options-file配置文件内容和原本参数内容,到数组中
     } catch (Exception ex) {
       LOG.error("Error while expanding arguments", ex);
       System.err.println(ex.getMessage());
@@ -204,9 +205,9 @@ public class Sqoop extends Configured implements Tool {
       return 1;
     }
 
-    String toolName = expandedArgs[0];
-    Configuration pluginConf = SqoopTool.loadPlugins(conf);
-    SqoopTool tool = SqoopTool.getTool(toolName);
+    String toolName = expandedArgs[0];//工具名称
+    Configuration pluginConf = SqoopTool.loadPlugins(conf);//加载自定义插件
+    SqoopTool tool = SqoopTool.getTool(toolName);//获取工具类
     if (null == tool) {
       System.err.println("No such sqoop tool: " + toolName
           + ". See 'sqoop help'.");

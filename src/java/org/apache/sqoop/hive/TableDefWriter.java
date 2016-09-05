@@ -56,7 +56,7 @@ public class TableDefWriter {
   private Configuration configuration;
   private String inputTableName;//被加载到HDFS时候的输入源的table名字
   private String outputTableName;//导入到hive中的table名字
-  private boolean commentsEnabled;
+  private boolean commentsEnabled;//是否有备注DDL
 
   /**
    * Creates a new TableDefWriter to generate a Hive CREATE TABLE statement.
@@ -83,7 +83,7 @@ public class TableDefWriter {
 
   /**
    * Set the column type map to be used.设置每一个列的类型
-   * (dependency injection for testing; not used in production.)
+   * (dependency injection for testing; not used in production.)测试的时候使用
    */
   public void setColumnTypes(Map<String, Integer> colTypes) {
     this.externalColTypes = colTypes;
@@ -92,12 +92,13 @@ public class TableDefWriter {
 
   /**
    * Get the column names to import.
+   * 获取要导入哪些数据库的字段
    */
   private String [] getColumnNames() {
-    String [] colNames = options.getColumns();//获取列的name集合
-    if (null != colNames) {
+    String [] colNames = options.getColumns();//获取列的name集合 columns参数 按照逗号拆分的集合
+    if (null != colNames) {//说明设置了columns参数,说明只导入这几个字段
       return colNames; // user-specified column names.
-    } else if (null != externalColTypes) {
+    } else if (null != externalColTypes) {//用于测试
       // Test-injection column mapping. Extract the col names from this.
       ArrayList<String> keyList = new ArrayList<String>();
       for (String key : externalColTypes.keySet()) {
@@ -105,10 +106,10 @@ public class TableDefWriter {
       }
 
       return keyList.toArray(new String[keyList.size()]);
-    } else if (null != inputTableName) {
+    } else if (null != inputTableName) {//查询整个表所有的字段
       return connManager.getColumnNames(inputTableName);//获取输入源数据库的table的元数据信息
-    } else {
-      return connManager.getColumnNamesForQuery(options.getSqlQuery());//获取输入源数据库的table的元数据信息
+    } else {//查询sql中指代的字段
+      return connManager.getColumnNamesForQuery(options.getSqlQuery());//获取输入源数据库的table的元数据信息  query参数的内容
     }
   }
 
@@ -119,9 +120,10 @@ public class TableDefWriter {
    */
   public String getCreateTableStmt() throws IOException {
     Map<String, Integer> columnTypes;//类的名字和类型
+      //map-column-hive参数,用于表示设置每一个数据库属性对应的hive类型,格式${column}=${hive} 或者 在props中加载map.column.hive.${column}=${hive}的类型,返回值是${column}=${hive}
     Properties userMapping = options.getMapColumnHive();//hive映射属性
 
-    if (externalColTypes != null) {
+    if (externalColTypes != null) {//用于测试
       // Use pre-defined column types.
       columnTypes = externalColTypes;
     } else {
@@ -133,20 +135,21 @@ public class TableDefWriter {
       }
     }
 
-    String [] colNames = getColumnNames();
+    String [] colNames = getColumnNames();//获取要导入哪些数据库的字段
     StringBuilder sb = new StringBuilder();
-    if (options.doFailIfHiveTableExists()) {
+    if (options.doFailIfHiveTableExists()) {//create-hive-table参数内容
       sb.append("CREATE TABLE `");
     } else {
       sb.append("CREATE TABLE IF NOT EXISTS `");
     }
 
-    if(options.getHiveDatabaseName() != null) {
+    if(options.getHiveDatabaseName() != null) { //hive-database参数内容
       sb.append(options.getHiveDatabaseName()).append("`.`");
     }
     sb.append(outputTableName).append("` ( ");
 
     // Check that all explicitly mapped columns are present in result set
+    //说明userMapping中的内容一定在colNames中存在,即colNames的内容多,要包含userMapping的内容,userMapping的内容是某些属性不存在hive映射的时候添加的内容,正常情况下不会设置该属性
     for(Object column : userMapping.keySet()) {
       boolean found = false;
       for(String c : colNames) {
@@ -163,7 +166,8 @@ public class TableDefWriter {
     }
 
     boolean first = true;
-    String partitionKey = options.getHivePartitionKey();
+    String partitionKey = options.getHivePartitionKey();  //hive-partition-key参数内容
+    //校验hive的分区不能在抓取的数据集合内
     for (String col : colNames) {
       if (col.equals(partitionKey)) {
         throw new IllegalArgumentException("Partition key " + col + " cannot "
@@ -177,11 +181,11 @@ public class TableDefWriter {
       first = false;
 
       Integer colType = columnTypes.get(col);
-      String hiveColType = userMapping.getProperty(col);
-      if (hiveColType == null) {
-        hiveColType = connManager.toHiveType(inputTableName, col, colType);//获取输入源数据库的table的元数据信息
+      String hiveColType = userMapping.getProperty(col);//该列对应的hive的类型
+      if (hiveColType == null) {//正常情况下都是null
+        hiveColType = connManager.toHiveType(inputTableName, col, colType);//根据字段的类型,即第三个参数映射属于哪个hive属性
       }
-      if (null == hiveColType) {
+      if (null == hiveColType) {//说明该列在hive没有对应的类型
         throw new IOException("Hive does not support the SQL type for column "
             + col);
       }
@@ -202,6 +206,7 @@ public class TableDefWriter {
       sb.append("COMMENT 'Imported by sqoop on " + curDateStr + "' ");
     }
 
+    //添加分区
     if (partitionKey != null) {
       sb.append("PARTITIONED BY (")
         .append(partitionKey)
@@ -209,15 +214,15 @@ public class TableDefWriter {
      }
 
     sb.append("ROW FORMAT DELIMITED FIELDS TERMINATED BY '");
-    sb.append(getHiveOctalCharCode((int) options.getOutputFieldDelim()));
+    sb.append(getHiveOctalCharCode((int) options.getOutputFieldDelim())); //fields-terminated-by参数内容
     sb.append("' LINES TERMINATED BY '");
-    sb.append(getHiveOctalCharCode((int) options.getOutputRecordDelim()));
-    String codec = options.getCompressionCodec();
+    sb.append(getHiveOctalCharCode((int) options.getOutputRecordDelim()));//参数lines-terminated-by内容
+    String codec = options.getCompressionCodec(); //参数compression-codec的内容
     if (codec != null && (codec.equals(CodecMap.LZOP)
             || codec.equals(CodecMap.getCodecClassName(CodecMap.LZOP)))) {
       sb.append("' STORED AS INPUTFORMAT "
               + "'com.hadoop.mapred.DeprecatedLzoTextInputFormat'");
-      sb.append(" OUTPUTFORMAT "
+        sb.append(" OUTPUTFORMAT "
               + "'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'");
     } else {
       sb.append("' STORED AS TEXTFILE");
@@ -241,20 +246,20 @@ public class TableDefWriter {
     StringBuilder sb = new StringBuilder();
     sb.append("LOAD DATA INPATH '");
     sb.append(finalPath.toString() + "'");
-    if (options.doOverwriteHiveTable()) {
+    if (options.doOverwriteHiveTable()) {//hive-overwrite参数设置
       sb.append(" OVERWRITE");
     }
     sb.append(" INTO TABLE `");
-    if(options.getHiveDatabaseName() != null) {
+    if(options.getHiveDatabaseName() != null) {//hive-database参数内容
       sb.append(options.getHiveDatabaseName()).append("`.`");
     }
     sb.append(outputTableName);
     sb.append('`');
 
-    if (options.getHivePartitionKey() != null) {
+    if (options.getHivePartitionKey() != null) {//hive-partition-key参数内容
       sb.append(" PARTITION (")
-        .append(options.getHivePartitionKey())
-        .append("='").append(options.getHivePartitionValue())
+        .append(options.getHivePartitionKey()) //hive-partition-key参数内容
+        .append("='").append(options.getHivePartitionValue()) //hive-partition-value参数内容
         .append("')");
     }
 
@@ -264,7 +269,7 @@ public class TableDefWriter {
 
     //输出目录就是仓库+表名,或者是targetDir
   public Path getFinalPath() throws IOException {
-    String warehouseDir = options.getWarehouseDir();
+    String warehouseDir = options.getWarehouseDir(); //warehouse-dir参数内容
     if (null == warehouseDir) {
       warehouseDir = "";
     } else if (!warehouseDir.endsWith(File.separator)) {
@@ -275,7 +280,7 @@ public class TableDefWriter {
     // 1. Use target dir if the user specified.
     // 2. Use input table name.
     String tablePath = null;
-    String targetDir = options.getTargetDir();
+    String targetDir = options.getTargetDir(); //target-dir参数内容
     if (null != targetDir) {
       tablePath = warehouseDir + targetDir;
     } else {
@@ -297,6 +302,7 @@ public class TableDefWriter {
    * @return a string of the form "\ooo" where ooo is an octal number
    * in [000, 177].
    * @throws IllegalArgumentException if charNum &gt; 0177.
+   * 把int数字转换成16进制,用于设置hive的分隔符
    */
   public static String getHiveOctalCharCode(int charNum) {
     if (charNum > 0177) {

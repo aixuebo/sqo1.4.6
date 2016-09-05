@@ -98,6 +98,7 @@ public abstract class ConnManager {
 
   /**
    * Return a list of column names in a table in the order returned by the db.
+   * 通过表名字得到所有列的属性集合
    */
   public abstract String [] getColumnNames(String tableName);
 
@@ -112,6 +113,7 @@ public abstract class ConnManager {
 
   /**
    * Return a list of column names in query in the order returned by the db.
+   * 通过query参数的内容,得到列的属性集合
    */
   public String [] getColumnNamesForQuery(String query) {
     LOG.error("This database does not support free-form query column names.");
@@ -543,7 +545,7 @@ public abstract class ConnManager {
    * all columns in a query.
    *
    * The Integer type id is a constant from java.sql.Types
-   * 查询该sql中每一个属性与该属性的类型映射关系
+   * 查询该sql中每一个属性与该属性的类型映射关系  根据query参数的内容
    */
   public Map<String, Integer> getColumnTypesForQuery(String query) {
     LOG.error("This database does not support free-form query column types.");

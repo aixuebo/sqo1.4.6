@@ -162,8 +162,9 @@ public class DataDrivenDBInputFormat<T extends DBWritable>
       // Based on the type of the results, use a different mechanism
       // for interpolating split points (i.e., numeric splits, text splits,
       // dates, etc.)
-      int sqlDataType = results.getMetaData().getColumnType(1);
-      boolean isSigned = results.getMetaData().isSigned(1);
+      //基于结果的类型,使用不同的机制
+      int sqlDataType = results.getMetaData().getColumnType(1);//类型
+      boolean isSigned = results.getMetaData().isSigned(1);//整数是否是无符号的那种
 
       // MySQL has an unsigned integer which we need to allocate space for
       if (sqlDataType == Types.INTEGER && !isSigned){
