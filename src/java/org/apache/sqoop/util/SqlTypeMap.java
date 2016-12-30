@@ -38,6 +38,12 @@ public class SqlTypeMap<K, V> extends HashMap<K, V> {
 
   @Override
   public V get(Object col) {
+	if(col instanceof String){
+		String col_temp = (String)col;
+		if(col_temp.startsWith("`") && col_temp.endsWith("`") ){
+			col = col_temp.substring(1,col_temp.length()-1);
+		}
+	}
     V sqlType = super.get(col);
     if (sqlType == null) {
       LOG.error("It seems like you are looking up a column that does not");

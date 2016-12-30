@@ -176,6 +176,9 @@ public abstract class CombineFileInputFormat<K, V>
     pools.add(multi);
   }
 
+  /**
+   * true表示该输入源参数file是可以被拆分的
+   */
   @Override
   protected boolean isSplitable(JobContext context, Path file) {
     final CompressionCodec codec =
@@ -263,24 +266,27 @@ public abstract class CombineFileInputFormat<K, V>
     // In one single iteration, process all the paths in a single pool.
     // Processing one pool at a time ensures that a split contains paths
     // from a single pool only.
+    //依次切换每一个过滤器
     for (MultiPathFilter onepool : pools) {
+      //本次符合满意的输入源路径集合
       ArrayList<Path> myPaths = new ArrayList<Path>();
 
       // pick one input path. If it matches all the filters in a pool,
       // add it to the output set
+      //对输入源集合进行过滤,找到符合该过滤器的输入源进行处理
       for (Iterator<Path> iter = newpaths.iterator(); iter.hasNext();) {
         Path p = iter.next();
         if (onepool.accept(p)) {
           myPaths.add(p); // add it to my output set
-          iter.remove();
+          iter.remove();//因为该输入源已经符合了,则移除,不需要对他在进行过滤了
         }
       }
-      // create splits for all files in this pool.
+      // create splits for all files in this pool.对本次过滤器选择出来的输入源进行拆分
       getMoreSplits(job, myPaths.toArray(new Path[myPaths.size()]),
                     maxSize, minSizeNode, minSizeRack, splits);
     }
 
-    // create splits for all files that are not in any pool.
+    // create splits for all files that are not in any pool.对没有池子中匹配的输入源进行处理
     getMoreSplits(job, newpaths.toArray(new Path[newpaths.size()]),
                   maxSize, minSizeNode, minSizeRack, splits);
 
@@ -519,8 +525,9 @@ public abstract class CombineFileInputFormat<K, V>
     private long fileSize;               // size of the file 该文件的总大小
     private OneBlockInfo[] blocks;       // all blocks in this file 该文件对应的所有数据块集合
 
-    OneFileInfo(Path path, Configuration conf,
-                boolean isSplitable,
+    OneFileInfo(Path path,//输入源一个文件 
+    		    Configuration conf,
+                boolean isSplitable,//true表示该文件是可以拆分的
                 HashMap<String, List<OneBlockInfo>> rackToBlocks,
                 HashMap<OneBlockInfo, String[]> blockToNodes,
                 HashMap<String, List<OneBlockInfo>> nodeToBlocks,
@@ -531,8 +538,9 @@ public abstract class CombineFileInputFormat<K, V>
 
       // get block locations from file system
       FileSystem fs = path.getFileSystem(conf);
-      FileStatus stat = fs.getFileStatus(path);
+      FileStatus stat = fs.getFileStatus(path);//该文件的元属性
       
+      //获取该文件每一个数据块信息集合
       BlockLocation[] locations = fs.getFileBlockLocations(stat, 0,
                                                            stat.getLen());
       // create a list of all block and their locations

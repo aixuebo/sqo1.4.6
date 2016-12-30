@@ -150,14 +150,14 @@ public class ConnFactory {
         // We have two constructor options, one is with or without explicit
         // constructor. In most cases --driver argument won't be allowed as the
         // connectors are forcing to use their building class names.
-        if (manualDriver == null) {
+        if (manualDriver == null) {//没设置driver
           Constructor<ConnManager> constructor =
             cls.getDeclaredConstructor(com.cloudera.sqoop.SqoopOptions.class);
           connManager = constructor.newInstance(options);
-        } else {
+        } else {//设置driver了
           Constructor<ConnManager> constructor =
             cls.getDeclaredConstructor(String.class,
-                                       com.cloudera.sqoop.SqoopOptions.class);
+                                       com.cloudera.sqoop.SqoopOptions.class); //构造函数必须有两个参数的构造函数,否则抛异常,该反射是不能继承的
           connManager = constructor.newInstance(manualDriver, options);
         }
       } catch (ClassNotFoundException e) {

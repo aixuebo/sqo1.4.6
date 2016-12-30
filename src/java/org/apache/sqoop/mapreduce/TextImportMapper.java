@@ -32,6 +32,8 @@ import com.cloudera.sqoop.mapreduce.AutoProgressMapper;
 /**
  * Imports records by transforming them to strings for a plain-text flat file.
  * 将数据库提取出来的SqoopRecord对象转换成Text存储到hdfs上
+ * 
+ * 从数据库查询出来的数据--存储到hdfs上是Text文本方式的
  */
 public class TextImportMapper
     extends AutoProgressMapper<LongWritable, SqoopRecord, Text, NullWritable> {

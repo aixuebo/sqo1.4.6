@@ -51,7 +51,11 @@ public final class JdbcWritableBridge {
   public static String convertString(String value){
 	  return value == null ? null : value.trim();
   }
-  
+
+  public static String readString(int colNum, ResultSet r) throws SQLException {
+        return convertString(r.getString(colNum));
+    }
+
   public static Integer readInteger(int colNum, ResultSet r)
       throws SQLException {
     int val;
@@ -73,9 +77,7 @@ public final class JdbcWritableBridge {
     }
   }
 
-  public static String readString(int colNum, ResultSet r) throws SQLException {
-    return convertString(r.getString(colNum));
-  }
+
   
   public static Float readFloat(int colNum, ResultSet r) throws SQLException {
     float val;

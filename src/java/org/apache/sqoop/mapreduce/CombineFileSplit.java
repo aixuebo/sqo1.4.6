@@ -46,10 +46,11 @@ import org.apache.hadoop.mapreduce.InputSplit;
  */
 public class CombineFileSplit extends InputSplit implements Writable {
 
-  private Path[] paths;
-  private long[] startoffset;
-  private long[] lengths;
-  private String[] locations;
+  private Path[] paths;//合并哪些file文件
+  private long[] startoffset;//每一个文件对应的起始位置
+  private long[] lengths;//每一个文件提取多少字节长度
+  private String[] locations;//每一个文件所在的地址
+  
   private long totLength;//所有length数组的总和
 
   /**
